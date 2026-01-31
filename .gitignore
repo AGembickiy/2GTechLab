@@ -1,0 +1,3 @@
+# Document files (not part of the project)
+*.odt
+.~lock.*
