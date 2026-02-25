@@ -1,0 +1,25 @@
+{
+  "name": "3d-printing-platform-api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "apollo-server-express": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "graphql": "latest",
+    "helmet": "latest",
+    "morgan": "latest"
+  },
+  "devDependencies": {
+    "ts-node-dev": "latest",
+    "typescript": "latest"
+  }
+}
+

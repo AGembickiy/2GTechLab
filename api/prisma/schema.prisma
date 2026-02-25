@@ -1,0 +1,447 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Общие сущности ---
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  firstName    String?
+  lastName     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  roles        UserRole[]
+  orders       Order[]
+  reviews      ProductReview[]
+  crmClient    CRMClient?
+}
+
+model Role {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  description String?
+
+  users       UserRole[]
+}
+
+model UserRole {
+  userId String
+  roleId Int
+
+  user   User @relation(fields: [userId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+model File3DModel {
+  id          String   @id @default(cuid())
+  originalName String
+  storageKey   String   // ключ в S3
+  format       String   // STL, OBJ, STEP
+  sizeBytes    Int
+  volumeCm3    Float?
+  createdAt    DateTime @default(now())
+
+  orders       OrderItem[]
+  products     Product[]
+}
+
+// --- Магазин и каталог ---
+
+model ProductCategory {
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
+  name      String
+  parentId  Int?
+
+  parent    ProductCategory? @relation("CategoryToParent", fields: [parentId], references: [id])
+  children  ProductCategory[] @relation("CategoryToParent")
+  products  Product[]
+}
+
+model Product {
+  id            Int               @id @default(autoincrement())
+  slug          String            @unique
+  name          String
+  description   String?
+  basePrice     Decimal           @db.Decimal(10, 2)
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  categoryId    Int?
+  category      ProductCategory?  @relation(fields: [categoryId], references: [id])
+
+  images        ProductImage[]
+  reviews       ProductReview[]
+  orderItems    OrderItem[]
+  model3DId     String?
+  model3D       File3DModel?      @relation(fields: [model3DId], references: [id])
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model ProductReview {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  product   Product @relation(fields: [productId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+}
+
+// --- Заказы и производство ---
+
+model Order {
+  id             String               @id @default(cuid())
+  userId         String
+  totalAmount    Decimal              @db.Decimal(10, 2)
+  currency       String               @default("RUB")
+  status         OrderStatus          @default(DRAFT)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  user           User                 @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  statusHistory  OrderStatusHistory[]
+  productionJobs ProductionJob[]
+  invoice        Invoice?
+  shippingInfo   ShippingInfo?
+}
+
+model OrderItem {
+  id             Int           @id @default(autoincrement())
+  orderId        String
+  productId      Int?
+  model3DId      String?
+  quantity       Int
+  unitPrice      Decimal       @db.Decimal(10, 2)
+  lineTotal      Decimal       @db.Decimal(10, 2)
+
+  order          Order         @relation(fields: [orderId], references: [id])
+  product        Product?      @relation(fields: [productId], references: [id])
+  model3D        File3DModel?  @relation(fields: [model3DId], references: [id])
+  productionJobs ProductionJob[]
+}
+
+model OrderStatusHistory {
+  id        Int         @id @default(autoincrement())
+  orderId   String
+  status    OrderStatus
+  comment   String?
+  createdAt DateTime    @default(now())
+
+  order     Order       @relation(fields: [orderId], references: [id])
+}
+
+enum OrderStatus {
+  DRAFT
+  PAID
+  IN_PRODUCTION
+  QA
+  SHIPPED
+  DELIVERED
+  CANCELED
+}
+
+model ProductionJob {
+  id             String            @id @default(cuid())
+  orderItemId    Int
+  printerId      Int?
+  materialId     Int?
+  estimatedHours Float?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  status         ProductionStatus  @default(QUEUED)
+
+  orderItem      OrderItem         @relation(fields: [orderItemId], references: [id])
+  printer        Printer?          @relation(fields: [printerId], references: [id])
+  material       Material?         @relation(fields: [materialId], references: [id])
+  stages         ProductionStage[]
+}
+
+model ProductionStage {
+  id           Int              @id @default(autoincrement())
+  jobId        String
+  type         ProductionStageType
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  status       ProductionStatus @default(QUEUED)
+  description  String?
+
+  job          ProductionJob    @relation(fields: [jobId], references: [id])
+}
+
+enum ProductionStageType {
+  PRINTING
+  POST_PROCESSING
+  QUALITY_CHECK
+}
+
+enum ProductionStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+model Printer {
+  id              Int               @id @default(autoincrement())
+  name            String
+  model           String?
+  status          PrinterStatus     @default(IDLE)
+  buildVolumeXMm  Float?
+  buildVolumeYMm  Float?
+  buildVolumeZMm  Float?
+
+  jobs            ProductionJob[]
+  schedules       PrinterSchedule[]
+  maintenance     MaintenanceTask[]
+}
+
+enum PrinterStatus {
+  IDLE
+  PRINTING
+  MAINTENANCE
+  OFFLINE
+}
+
+model PrinterSchedule {
+  id        Int       @id @default(autoincrement())
+  printerId Int
+  jobId     String?
+  startAt   DateTime
+  endAt     DateTime
+
+  printer   Printer   @relation(fields: [printerId], references: [id])
+  job       ProductionJob? @relation(fields: [jobId], references: [id])
+}
+
+// --- Склад и материалы ---
+
+model Material {
+  id          Int             @id @default(autoincrement())
+  name        String
+  code        String          @unique
+  type        String
+  color       String?
+  densityGcm3 Float?
+
+  stocks      MaterialStock[]
+  movements   StockMovement[]
+  jobs        ProductionJob[]
+}
+
+model MaterialStock {
+  id          Int       @id @default(autoincrement())
+  materialId  Int
+  location    String
+  quantityKg  Float
+  minQuantity Float     @default(0)
+
+  material    Material  @relation(fields: [materialId], references: [id])
+}
+
+model StockMovement {
+  id          Int             @id @default(autoincrement())
+  materialId  Int
+  type        StockMovementType
+  quantityKg  Float
+  createdAt   DateTime        @default(now())
+  reference   String?
+
+  material    Material        @relation(fields: [materialId], references: [id])
+}
+
+enum StockMovementType {
+  INBOUND
+  OUTBOUND
+  ADJUSTMENT
+}
+
+model Supplier {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+
+  // Связи с материалами могут быть реализованы позже при необходимости.
+}
+
+// --- Оборудование и обслуживание ---
+
+model MaintenanceTask {
+  id          Int        @id @default(autoincrement())
+  printerId   Int
+  scheduledAt DateTime
+  completedAt DateTime?
+  description String?
+
+  printer     Printer    @relation(fields: [printerId], references: [id])
+}
+
+// --- Финансы ---
+
+model Invoice {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  totalAmount Decimal   @db.Decimal(10, 2)
+  currency    String    @default("RUB")
+  issuedAt    DateTime  @default(now())
+
+  order       Order     @relation(fields: [orderId], references: [id])
+  payments    Payment[]
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  invoiceId     String
+  provider      String
+  providerRef   String?
+  amount        Decimal         @db.Decimal(10, 2)
+  status        PaymentStatus   @default(PENDING)
+  paidAt        DateTime?
+
+  invoice       Invoice         @relation(fields: [invoiceId], references: [id])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELED
+}
+
+model Payout {
+  id          String    @id @default(cuid())
+  amount      Decimal   @db.Decimal(10, 2)
+  currency    String    @default("RUB")
+  target      String
+  createdAt   DateTime  @default(now())
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  category    String
+  amount      Decimal   @db.Decimal(10, 2)
+  currency    String    @default("RUB")
+  occurredAt  DateTime  @default(now())
+  note        String?
+}
+
+model ProfitabilityReport {
+  id          String    @id @default(cuid())
+  periodStart DateTime
+  periodEnd   DateTime
+  revenue     Decimal   @db.Decimal(10, 2)
+  cost        Decimal   @db.Decimal(10, 2)
+  profit      Decimal   @db.Decimal(10, 2)
+  createdAt   DateTime  @default(now())
+}
+
+// --- CRM ---
+
+model CRMClient {
+  id        String      @id @default(cuid())
+  userId    String?     @unique
+  email     String
+  phone     String?
+  name      String?
+
+  user      User?       @relation(fields: [userId], references: [id])
+  leads     Lead[]
+  deals     Deal[]
+  tickets   SupportTicket[]
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  clientId    String?
+  source      String?
+  status      LeadStatus @default(NEW)
+  createdAt   DateTime   @default(now())
+
+  client      CRMClient? @relation(fields: [clientId], references: [id])
+}
+
+enum LeadStatus {
+  NEW
+  IN_PROGRESS
+  CONVERTED
+  LOST
+}
+
+model Deal {
+  id          String     @id @default(cuid())
+  clientId    String?
+  value       Decimal    @db.Decimal(10, 2)
+  stage       String
+  createdAt   DateTime   @default(now())
+
+  client      CRMClient? @relation(fields: [clientId], references: [id])
+}
+
+model Interaction {
+  id          String     @id @default(cuid())
+  clientId    String?
+  channel     String
+  content     String?
+  occurredAt  DateTime   @default(now())
+
+  client      CRMClient? @relation(fields: [clientId], references: [id])
+}
+
+model SupportTicket {
+  id          String      @id @default(cuid())
+  clientId    String?
+  subject     String
+  status      TicketStatus @default(OPEN)
+  createdAt   DateTime    @default(now())
+
+  client      CRMClient?  @relation(fields: [clientId], references: [id])
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// --- Доставка ---
+
+model ShippingInfo {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  addressLine1   String
+  addressLine2   String?
+  city           String
+  postalCode     String
+  country        String
+  provider       String?
+  trackingNumber String?
+
+  order          Order     @relation(fields: [orderId], references: [id])
+}
+

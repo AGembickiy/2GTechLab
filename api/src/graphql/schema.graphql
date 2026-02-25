@@ -1,0 +1,196 @@
+"""
+Базовая GraphQL‑схема для платформы 3D‑печати.
+Описывает основные сущности и запросы/мутации первого этапа.
+"""
+
+scalar DateTime
+scalar Decimal
+
+type User {
+  id: ID!
+  email: String!
+  firstName: String
+  lastName: String
+  roles: [String!]!
+}
+
+type ProductCategory {
+  id: ID!
+  slug: String!
+  name: String!
+}
+
+type ProductImage {
+  url: String!
+  alt: String
+}
+
+type Product {
+  id: ID!
+  slug: String!
+  name: String!
+  description: String
+  basePrice: Decimal!
+  isActive: Boolean!
+  category: ProductCategory
+  images: [ProductImage!]!
+  rating: Float
+}
+
+type OrderItem {
+  id: ID!
+  product: Product
+  quantity: Int!
+  unitPrice: Decimal!
+  lineTotal: Decimal!
+}
+
+enum OrderStatus {
+  DRAFT
+  PAID
+  IN_PRODUCTION
+  QA
+  SHIPPED
+  DELIVERED
+  CANCELED
+}
+
+type Order {
+  id: ID!
+  status: OrderStatus!
+  totalAmount: Decimal!
+  currency: String!
+  createdAt: DateTime!
+  items: [OrderItem!]!
+}
+
+type Material {
+  id: ID!
+  name: String!
+  code: String!
+  type: String!
+  color: String
+}
+
+enum ProductionStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+type ProductionJob {
+  id: ID!
+  orderItem: OrderItem!
+  status: ProductionStatus!
+  estimatedHours: Float
+  startedAt: DateTime
+  finishedAt: DateTime
+}
+
+type Printer {
+  id: ID!
+  name: String!
+  status: String!
+}
+
+"""
+Результат расчёта стоимости 3D‑печати.
+"""
+type PricingResult {
+  totalPrice: Decimal!
+  materialCost: Decimal!
+  machineTimeHours: Float!
+  machineCost: Decimal!
+  postProcessingCost: Decimal!
+  estimatedDurationHours: Float!
+}
+
+"""
+Параметры для расчёта стоимости печати.
+"""
+input PricingInput {
+  modelFileId: ID!
+  materialCode: String!
+  infillPercent: Int!
+  layerHeightMm: Float!
+  quantity: Int = 1
+  postProcessing: Boolean = false
+}
+
+input ProductFilterInput {
+  categorySlug: String
+  minPrice: Decimal
+  maxPrice: Decimal
+  search: String
+}
+
+type Query {
+  # Аутентификация/пользователи
+  me: User
+  users: [User!]!
+
+  # Магазин
+  products(filter: ProductFilterInput): [Product!]!
+  productBySlug(slug: String!): Product
+  productCategories: [ProductCategory!]!
+
+  # Заказы
+  myOrders: [Order!]!
+  orderById(id: ID!): Order
+
+  # Производство
+  productionQueue: [ProductionJob!]!
+  printers: [Printer!]!
+
+  # Справочники
+  materials: [Material!]!
+
+  # Сервисное
+  health: String!
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  firstName: String
+  lastName: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+input CreateOrderItemInput {
+  productId: ID
+  modelFileId: ID
+  quantity: Int!
+}
+
+input CreateOrderInput {
+  items: [CreateOrderItemInput!]!
+}
+
+type Mutation {
+  # Аутентификация
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  refreshToken(refreshToken: String!): AuthPayload!
+  logout: Boolean!
+
+  # Магазин и заказы
+  createOrder(input: CreateOrderInput!): Order!
+  repeatOrder(orderId: ID!): Order!
+
+  # Калькулятор
+  calculatePrice(input: PricingInput!): PricingResult!
+}
+
