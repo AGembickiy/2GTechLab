@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { urlFor } from "@/lib/sanity/image";
+import { urlFor } from "../lib/sanity/image";
 
 type PortfolioItem = {
   _id: string;
@@ -56,6 +56,7 @@ export default function PortfolioPile({ items }: { items: PortfolioItem[] }) {
           const offset = OFFSETS[i % OFFSETS.length];
           const isSelected = selectedId === item._id;
           const imageSrc = item.imageUrl ?? (item.image ? urlFor(item.image).width(800).height(600).url() : null);
+          const isExternal = typeof imageSrc === "string" && imageSrc.startsWith("http");
 
           return (
             <motion.button
@@ -77,13 +78,21 @@ export default function PortfolioPile({ items }: { items: PortfolioItem[] }) {
               <div className="overflow-hidden rounded-md">
                 <div className="relative aspect-[4/3] bg-[var(--border)]">
                   {imageSrc ? (
-                    <Image
-                      src={imageSrc}
-                      alt={item.title ?? "Работа"}
-                      fill
-                      className="object-cover"
-                      sizes="280px"
-                    />
+                    isExternal ? (
+                      <img
+                        src={imageSrc}
+                        alt={item.title ?? "Работа"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={imageSrc}
+                        alt={item.title ?? "Работа"}
+                        fill
+                        className="object-cover"
+                        sizes="280px"
+                      />
+                    )
                   ) : (
                     <div className="flex h-full items-center justify-center text-[var(--muted)] text-sm">
                       Нет фото
@@ -131,16 +140,29 @@ export default function PortfolioPile({ items }: { items: PortfolioItem[] }) {
             >
               <div className="relative aspect-video overflow-hidden rounded-lg bg-[var(--border)]">
                 {(selected.imageUrl || selected.image) ? (
-                  <Image
-                    src={
-                      selected.imageUrl ??
-                      (selected.image ? urlFor(selected.image).width(1200).height(675).url() : "")
-                    }
-                    alt={selected.title ?? "Работа"}
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 100vw, 672px"
-                  />
+                  typeof (selected.imageUrl ??
+                    (selected.image ? urlFor(selected.image).width(1200).height(675).url() : "")) === "string" &&
+                  (selected.imageUrl ?? "").startsWith("http") ? (
+                    <img
+                      src={
+                        selected.imageUrl ??
+                        (selected.image ? urlFor(selected.image).width(1200).height(675).url() : "")
+                      }
+                      alt={selected.title ?? "Работа"}
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <Image
+                      src={
+                        selected.imageUrl ??
+                        (selected.image ? urlFor(selected.image).width(1200).height(675).url() : "")
+                      }
+                      alt={selected.title ?? "Работа"}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 672px"
+                    />
+                  )
                 ) : (
                   <div className="flex h-full items-center justify-center text-[var(--muted)]">Нет фото</div>
                 )}

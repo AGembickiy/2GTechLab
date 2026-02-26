@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { client } from "./client";
 import {
   servicesQuery,
@@ -9,6 +11,7 @@ import {
   reviewsQuery,
   siteSettingsQuery,
   featuredProductsQuery,
+  heroSliderQuery,
 } from "./queries";
 import {
   mockServices,
@@ -18,9 +21,37 @@ import {
   mockFaq,
   mockReviews,
   mockSiteSettings,
-} from "@/lib/mockData";
+  mockHeroSlider,
+} from "../mockData";
 
-const hasSanity = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID && process.env.NEXT_PUBLIC_SANITY_PROJECT_ID !== "placeholder";
+const hasSanity =
+  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID &&
+  process.env.NEXT_PUBLIC_SANITY_PROJECT_ID !== "placeholder";
+
+function getLocalHeroSlider() {
+  try {
+    const sliderDir = path.join(process.cwd(), "public", "slider");
+    if (!fs.existsSync(sliderDir)) return null;
+
+    const files = fs
+      .readdirSync(sliderDir)
+      .filter((name) => /\.(png|jpe?g|webp|avif)$/i.test(name));
+
+    if (!files.length) return null;
+
+    return {
+      items: files.slice(0, 5).map((file, index) => ({
+        _key: `local-${index}`,
+        image: null,
+        imageUrl: `/slider/${file}`,
+        alt: `Фото мастерской ${index + 1}`,
+        order: index,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
 
 export async function fetchServices() {
   if (!hasSanity) return mockServices;
@@ -79,4 +110,16 @@ export async function fetchFeaturedProducts() {
   if (!hasSanity) return mockProducts.slice(0, 2);
   const data = await client.fetch(featuredProductsQuery);
   return data?.length ? data : mockProducts.slice(0, 2);
+}
+
+export async function fetchHeroSlider() {
+  if (!hasSanity) {
+    const local = getLocalHeroSlider();
+    if (local?.items?.length) return local;
+    return mockHeroSlider;
+  }
+
+  const data = await client.fetch(heroSliderQuery);
+  if (!data?.items?.length) return mockHeroSlider;
+  return { items: data.items };
 }

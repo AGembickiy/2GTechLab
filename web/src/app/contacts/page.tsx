@@ -1,4 +1,4 @@
-import { fetchSiteSettings } from "@/lib/sanity/fetch";
+import { fetchSiteSettings } from "../../lib/sanity/fetch";
 import ContactForm from "@/components/ContactForm";
 
 export const metadata = {

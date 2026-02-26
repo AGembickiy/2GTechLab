@@ -1,4 +1,4 @@
-import { fetchFaq } from "@/lib/sanity/fetch";
+import { fetchFaq } from "../../lib/sanity/fetch";
 import FaqAccordion from "@/components/FaqAccordion";
 
 export const metadata = {

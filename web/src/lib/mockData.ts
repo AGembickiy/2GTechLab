@@ -47,3 +47,43 @@ export const mockSiteSettings = {
   email: "info@2gtechlab.ru",
   address: "г. Москва, ул. Примерная, д. 1",
 };
+
+export const mockHeroSlider = {
+  items: [
+    {
+      _key: "slide-0",
+      image: null,
+      imageUrl: "https://placehold.co/900x600?text=Workshop+1",
+      alt: "Фото мастерской 1",
+      order: 0,
+    },
+    {
+      _key: "slide-1",
+      image: null,
+      imageUrl: "https://placehold.co/900x600?text=Workshop+2",
+      alt: "Фото мастерской 2",
+      order: 1,
+    },
+    {
+      _key: "slide-2",
+      image: null,
+      imageUrl: "https://placehold.co/900x600?text=Workshop+3",
+      alt: "Фото мастерской 3",
+      order: 2,
+    },
+    {
+      _key: "slide-3",
+      image: null,
+      imageUrl: "https://placehold.co/900x600?text=Workshop+4",
+      alt: "Фото мастерской 4",
+      order: 3,
+    },
+    {
+      _key: "slide-4",
+      image: null,
+      imageUrl: "https://placehold.co/900x600?text=Workshop+5",
+      alt: "Фото мастерской 5",
+      order: 4,
+    },
+  ],
+};

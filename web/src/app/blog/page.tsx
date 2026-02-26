@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { fetchBlogPosts } from "@/lib/sanity/fetch";
-import { urlFor } from "@/lib/sanity/image";
+import { fetchBlogPosts } from "../../lib/sanity/fetch";
+import { urlFor } from "../../lib/sanity/image";
 
 export const metadata = {
   title: "Блог",

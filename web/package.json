@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "latest",
+    "@sanity/image-url": "^2.0.3",
     "next": "latest",
+    "next-sanity": "^12.1.0",
     "react": "latest",
     "react-dom": "latest",
     "react-redux": "latest"
@@ -24,4 +26,3 @@
     "typescript": "latest"
   }
 }
-

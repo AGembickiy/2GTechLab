@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { fetchProducts, fetchBlogPosts } from "@/lib/sanity/fetch";
+import { fetchProducts, fetchBlogPosts } from "../lib/sanity/fetch";
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://2gtechlab.ru";
 

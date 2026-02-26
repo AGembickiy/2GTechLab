@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { urlFor } from "@/lib/sanity/image";
+import { urlFor } from "../lib/sanity/image";
 
 type PortfolioItem = {
   _id: string;
@@ -22,6 +22,8 @@ export default function PortfolioPreview({ items }: { items: PortfolioItem[] }) 
     <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => {
         const imageSrc = item.imageUrl ?? (item.image ? urlFor(item.image).width(600).height(400).url() : null);
+        const isExternal = typeof imageSrc === "string" && imageSrc.startsWith("http");
+
         return (
           <Link
             key={item._id}
@@ -30,13 +32,21 @@ export default function PortfolioPreview({ items }: { items: PortfolioItem[] }) 
           >
             <div className="relative aspect-[3/2] overflow-hidden bg-[var(--border)]">
               {imageSrc ? (
-                <Image
-                  src={imageSrc}
-                  alt={item.title ?? "Работа"}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-105"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                />
+                isExternal ? (
+                  <img
+                    src={imageSrc}
+                    alt={item.title ?? "Работа"}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <Image
+                    src={imageSrc}
+                    alt={item.title ?? "Работа"}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  />
+                )
               ) : (
                 <div className="flex h-full items-center justify-center text-[var(--muted)]">Нет фото</div>
               )}

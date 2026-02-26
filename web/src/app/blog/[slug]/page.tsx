@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { fetchBlogPostBySlug, fetchBlogPosts } from "@/lib/sanity/fetch";
-import { urlFor } from "@/lib/sanity/image";
+import { fetchBlogPostBySlug, fetchBlogPosts } from "../../../lib/sanity/fetch";
+import { urlFor } from "../../../lib/sanity/image";
 import PortableText from "@/components/PortableText";
 
 export async function generateStaticParams() {

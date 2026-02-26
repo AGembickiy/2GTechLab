@@ -9,3 +9,10 @@ export const faqQuery = `*[_type == "faq"] | order(order asc)`;
 export const reviewsQuery = `*[_type == "review" && approved == true] | order(date desc)`;
 export const siteSettingsQuery = `*[_type == "siteSettings"][0]`;
 export const featuredProductsQuery = `*[_type == "product" && featured == true][0...4]`;
+export const heroSliderQuery = `*[_type == "heroSlider"][0]{
+  items | order(order asc){
+    image,
+    "alt": alt,
+    "order": order
+  }
+}`;

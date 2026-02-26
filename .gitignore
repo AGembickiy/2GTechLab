@@ -30,3 +30,8 @@ coverage
 # Docker
 .docker
 
+# Документация (локальное ТЗ)
+Подробное техническое задание (ТЗ).md
+
+# Cursor config
+.cursor

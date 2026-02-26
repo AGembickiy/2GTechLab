@@ -1,4 +1,4 @@
-import { fetchPortfolio } from "@/lib/sanity/fetch";
+import { fetchPortfolio } from "../../lib/sanity/fetch";
 import PortfolioPile from "@/components/PortfolioPile";
 
 export const metadata = {

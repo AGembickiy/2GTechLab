@@ -1,0 +1,10 @@
+{
+  "name": "2gtechlab-root",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix api\" \"npm run dev --prefix web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
