@@ -67,14 +67,13 @@ export default function HeroSlider({ items }: { items: HeroSliderItem[] }) {
           return (
             <div
               key={item._key ?? `slide-${i}`}
-              className={`hero-slider__item transition-all duration-500 ease-out ${isActive ? 'cursor-default' : 'cursor-pointer'}`}
+              className={`hero-slider__item transition-all duration-500 ease-out ${isActive ? "hero-slider__item--active cursor-default" : "cursor-pointer"}`}
               style={{
                 left: isActive ? "50%" : `${pos.left}%`,
                 top: "50%",
                 width: isActive ? "30%" : `${pos.width}%`,
-                maxHeight: isActive ? "80vh" : "none",
                 transform: isActive
-                  ? "translate(-50%, -50%) scale(1.2) rotate(0deg)"
+                  ? "translate(-50%, -50%) scale(1.03) rotate(0deg)"
                   : `translateY(-50%) rotate(${pos.rotate}deg)`,
                 zIndex: isActive ? 1000 : 10 + i,
               }}

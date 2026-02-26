@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { Providers } from "./providers";
 import { fetchHeroSlider } from "../lib/sanity/fetch";
@@ -21,13 +22,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <header className="app-header">
               <div className="logo">2GTechLab</div>
               <nav className="nav">
-                <a href="/">Главная</a>
-                <a href="/calculator">Калькулятор</a>
-                <a href="/catalog">Магазин</a>
-                <a href="/upload">Загрузка модели</a>
-                <a href="/orders">Мои заказы</a>
-                <a href="/account">Личный кабинет</a>
-                <a href="/admin">Админка</a>
+                <Link href="/">Главная</Link>
+                <Link href="/order">Заказать</Link>
+                <Link href="/calculator">Расчитать</Link>
+                <Link href="/catalog">Магазин</Link>
+                <Link href="/models">Модели</Link>
+                <Link href="/about">О нас</Link>
+                <Link href="/account">ЛК</Link>
               </nav>
             </header>
             {sliderItems.length > 0 && <HeroSlider items={sliderItems} />}
@@ -41,4 +42,3 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     </html>
   );
 }
-

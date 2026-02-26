@@ -12,43 +12,48 @@ type ApiProduct = {
 async function fetchCatalogProducts(): Promise<ApiProduct[]> {
   const endpoint = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/graphql";
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query: `
-        query CatalogProducts {
-          products {
-            id
-            slug
-            name
-            description
-            basePrice
-            isActive
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: `
+          query CatalogProducts {
+            products {
+              id
+              slug
+              name
+              description
+              basePrice
+              isActive
+            }
           }
-        }
-      `,
-    }),
-    // Каталог должен показывать актуальные данные
-    cache: "no-store",
-  });
+        `,
+      }),
+      // Каталог должен показывать актуальные данные
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to load products: ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`Failed to load products: ${response.statusText}`);
+    }
+
+    const json = (await response.json()) as {
+      data?: { products?: ApiProduct[] };
+      errors?: Array<{ message: string }>;
+    };
+
+    if (json.errors?.length) {
+      throw new Error(json.errors.map((e) => e.message).join("; "));
+    }
+
+    return json.data?.products ?? [];
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return []; // Возвращаем пустой список при ошибке сети
   }
-
-  const json = (await response.json()) as {
-    data?: { products?: ApiProduct[] };
-    errors?: Array<{ message: string }>;
-  };
-
-  if (json.errors?.length) {
-    throw new Error(json.errors.map((e) => e.message).join("; "));
-  }
-
-  return json.data?.products ?? [];
 }
 
 export default async function CatalogPage() {
@@ -83,4 +88,3 @@ export default async function CatalogPage() {
     </div>
   );
 }
-
