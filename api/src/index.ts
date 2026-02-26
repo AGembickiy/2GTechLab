@@ -7,6 +7,9 @@ import { ApolloServer } from "apollo-server-express";
 import { readFileSync } from "fs";
 import path from "path";
 import { GraphQLScalarType, Kind } from "graphql";
+import prisma from "./prisma";
+import { verifyToken, hashPassword, comparePassword, generateToken } from "./modules/auth/utils";
+import { isAuthenticated, hasRole } from "./modules/auth/permissions";
 
 const mockProducts = [
   {
@@ -86,7 +89,105 @@ async function bootstrap() {
       Query: {
         health: () => "ok",
         products: () => mockProducts,
+        me: async (_parent, _args, context) => {
+          if (!context.user) return null;
+          const user = await prisma.user.findUnique({
+            where: { id: context.user.userId },
+            include: { roles: { include: { role: true } } },
+          });
+          if (!user) return null;
+          return {
+            ...user,
+            roles: user.roles.map((ur: any) => ur.role.name),
+          };
+        },
+        users: hasRole(["ADMIN"], async () => {
+          const users = await prisma.user.findMany({
+            include: { roles: { include: { role: true } } },
+          });
+          return users.map((user: any) => ({
+            ...user,
+            roles: user.roles.map((ur: any) => ur.role.name),
+          }));
+        }),
+        myOrders: isAuthenticated(async (_parent, _args, context) => {
+          return prisma.order.findMany({
+            where: { userId: context.user.userId },
+            include: { items: { include: { product: true } } },
+          });
+        }),
       },
+      Mutation: {
+        register: async (_parent, { input }) => {
+          const { email, password, firstName, lastName } = input;
+          const existingUser = await prisma.user.findUnique({ where: { email } });
+          if (existingUser) {
+            throw new Error("User already exists");
+          }
+
+          const passwordHash = await hashPassword(password);
+          const user = await prisma.user.create({
+            data: {
+              email,
+              passwordHash,
+              firstName,
+              lastName,
+              roles: {
+                create: {
+                  role: {
+                    connectOrCreate: {
+                      where: { name: "CLIENT" },
+                      create: { name: "CLIENT", description: "Обычный клиент" },
+                    },
+                  },
+                },
+              },
+            },
+            include: { roles: { include: { role: true } } },
+          });
+
+          const roles = user.roles.map((ur: any) => ur.role.name);
+          const accessToken = generateToken({ userId: user.id, roles });
+
+          return {
+            accessToken,
+            refreshToken: "mock-refresh-token",
+            user: {
+              ...user,
+              roles,
+            },
+          };
+        },
+        login: async (_parent, { input }) => {
+          const { email, password } = input;
+          const user = await prisma.user.findUnique({
+            where: { email },
+            include: { roles: { include: { role: true } } },
+          });
+
+          if (!user || !(await comparePassword(password, user.passwordHash))) {
+            throw new Error("Invalid email or password");
+          }
+
+          const roles = user.roles.map((ur: any) => ur.role.name);
+          const accessToken = generateToken({ userId: user.id, roles });
+
+          return {
+            accessToken,
+            refreshToken: "mock-refresh-token",
+            user: {
+              ...user,
+              roles,
+            },
+          };
+        },
+      },
+    },
+    context: ({ req }) => {
+      const authHeader = req.headers.authorization || "";
+      const token = authHeader.replace("Bearer ", "");
+      const user = token ? verifyToken(token) : null;
+      return { user, prisma };
     },
   });
 
@@ -118,4 +219,3 @@ bootstrap().catch((err) => {
   console.error("Failed to start API", err);
   process.exit(1);
 });
-
