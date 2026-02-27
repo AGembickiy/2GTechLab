@@ -9,7 +9,16 @@ import path from "path";
 import { GraphQLScalarType, Kind } from "graphql";
 import prisma from "./prisma";
 import { verifyToken, hashPassword, comparePassword, generateToken } from "./modules/auth/utils";
+import { validateTelegramAuth, isTelegramAuthDateValid } from "./modules/auth/telegram";
 import { isAuthenticated, hasRole } from "./modules/auth/permissions";
+
+function normalizePhone(phone: string): string {
+  let digits = phone.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("8")) {
+    digits = "7" + digits.slice(1);
+  }
+  return digits;
+}
 
 const mockProducts = [
   {
@@ -122,7 +131,7 @@ async function bootstrap() {
           const { email, password, firstName, lastName } = input;
           const existingUser = await prisma.user.findUnique({ where: { email } });
           if (existingUser) {
-            throw new Error("User already exists");
+            throw new Error("Пользователь с таким email уже зарегистрирован");
           }
 
           const passwordHash = await hashPassword(password);
@@ -152,21 +161,71 @@ async function bootstrap() {
           return {
             accessToken,
             refreshToken: "mock-refresh-token",
-            user: {
-              ...user,
-              roles,
-            },
+            user: { ...user, roles },
           };
         },
-        login: async (_parent, { input }) => {
-          const { email, password } = input;
-          const user = await prisma.user.findUnique({
-            where: { email },
+        registerByPhone: async (_parent, { input }) => {
+          const { phone, password, firstName, lastName } = input;
+          const normalized = normalizePhone(phone);
+          if (normalized.length < 10) {
+            throw new Error("Введите корректный номер телефона");
+          }
+          const existingUser = await prisma.user.findUnique({
+            where: { phone: normalized },
+          });
+          if (existingUser) {
+            throw new Error("Пользователь с таким номером уже зарегистрирован");
+          }
+
+          const passwordHash = await hashPassword(password);
+          const user = await prisma.user.create({
+            data: {
+              phone: normalized,
+              passwordHash,
+              firstName,
+              lastName,
+              roles: {
+                create: {
+                  role: {
+                    connectOrCreate: {
+                      where: { name: "CLIENT" },
+                      create: { name: "CLIENT", description: "Обычный клиент" },
+                    },
+                  },
+                },
+              },
+            },
             include: { roles: { include: { role: true } } },
           });
 
-          if (!user || !(await comparePassword(password, user.passwordHash))) {
-            throw new Error("Invalid email or password");
+          const roles = user.roles.map((ur: any) => ur.role.name);
+          const accessToken = generateToken({ userId: user.id, roles });
+
+          return {
+            accessToken,
+            refreshToken: "mock-refresh-token",
+            user: { ...user, roles },
+          };
+        },
+        login: async (_parent, { input }) => {
+          const { email, phone, password } = input;
+          if (!email && !phone) {
+            throw new Error("Укажите email или номер телефона");
+          }
+          if (!password) {
+            throw new Error("Укажите пароль");
+          }
+
+          const where = email
+            ? { email }
+            : { phone: normalizePhone(phone!) };
+          const user = await prisma.user.findFirst({
+            where,
+            include: { roles: { include: { role: true } } },
+          });
+
+          if (!user || !user.passwordHash || !(await comparePassword(password, user.passwordHash))) {
+            throw new Error("Неверный email/телефон или пароль");
           }
 
           const roles = user.roles.map((ur: any) => ur.role.name);
@@ -175,10 +234,67 @@ async function bootstrap() {
           return {
             accessToken,
             refreshToken: "mock-refresh-token",
-            user: {
-              ...user,
-              roles,
-            },
+            user: { ...user, roles },
+          };
+        },
+        loginByTelegram: async (_parent, { input }) => {
+          const botToken = process.env.TELEGRAM_BOT_TOKEN;
+          if (!botToken) {
+            throw new Error("Вход через Telegram временно недоступен");
+          }
+
+          const payload = {
+            id: input.id,
+            first_name: input.first_name ?? undefined,
+            last_name: input.last_name ?? undefined,
+            username: input.username ?? undefined,
+            photo_url: input.photo_url ?? undefined,
+            auth_date: input.auth_date,
+            hash: input.hash,
+          };
+
+          if (!validateTelegramAuth(payload, botToken)) {
+            throw new Error("Неверные данные авторизации Telegram");
+          }
+          if (!isTelegramAuthDateValid(payload.auth_date)) {
+            throw new Error("Срок действия данных истёк, войдите снова");
+          }
+
+          const telegramId = String(payload.id);
+          let user = await prisma.user.findUnique({
+            where: { telegramId },
+            include: { roles: { include: { role: true } } },
+          });
+
+          if (!user) {
+            user = await prisma.user.create({
+              data: {
+                telegramId,
+                telegramUsername: payload.username ?? null,
+                firstName: payload.first_name ?? null,
+                lastName: payload.last_name ?? null,
+                roles: {
+                  create: {
+                    role: {
+                      connectOrCreate: {
+                        where: { name: "CLIENT" },
+                        create: { name: "CLIENT", description: "Обычный клиент" },
+                      },
+                    },
+                  },
+                },
+              },
+              include: { roles: { include: { role: true } } },
+            });
+          }
+
+          const roles = user.roles.map((ur: any) => ur.role.name);
+          const accessToken = generateToken({ userId: user.id, roles });
+
+          return {
+            accessToken,
+            refreshToken: "mock-refresh-token",
+            user: { ...user, roles },
           };
         },
       },

@@ -5,8 +5,10 @@
 }
 
 html {
+  height: 100%;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  overflow: hidden;
 }
 
 html::-webkit-scrollbar {
@@ -15,12 +17,13 @@ html::-webkit-scrollbar {
 
 body {
   margin: 0;
-  overflow-x: hidden;
+  overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background-color: #0f172a;
   color: #e5e7eb;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  height: 100vh;
 }
 
 body::-webkit-scrollbar {
@@ -92,10 +95,24 @@ a {
   transition: all 0.2s ease;
 }
 
-.nav a:hover {
+.nav a:hover,
+.nav .nav__auth-trigger:hover {
   background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.25), rgba(37, 99, 235, 0.15));
   color: #ffffff;
   box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+}
+
+.nav__auth-trigger {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: inherit;
+  font-family: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .app-main {
@@ -106,8 +123,15 @@ a {
   margin: 0 auto;
   padding: 1rem 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.app-main::-webkit-scrollbar {
+  display: none;
 }
 
 .app-footer {
@@ -249,6 +273,16 @@ a {
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
 }
 
+.cta-btn--danger {
+  background: rgba(220, 38, 38, 0.9);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+}
+
+.cta-btn--danger:hover {
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.5);
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -272,6 +306,173 @@ a {
 
 .btn-primary:active {
   transform: translateY(0);
+}
+
+/* Модальное окно входа */
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.login-modal-overlay::-webkit-scrollbar {
+  display: none;
+}
+
+.login-modal {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  flex-shrink: 0;
+  padding: 2rem 1.75rem;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.login-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.login-modal__close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #94a3b8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  transition: color 0.2s, background 0.2s;
+}
+
+.login-modal__close:hover {
+  color: #e5e7eb;
+  background: rgba(51, 65, 85, 0.5);
+}
+
+.login-modal__form {
+  text-align: left;
+}
+
+.login-modal__field {
+  margin-bottom: 1.25rem;
+}
+
+.login-modal__field:last-of-type {
+  margin-bottom: 1.5rem;
+}
+
+.login-modal__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.login-modal__input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: #e5e7eb;
+  background: #0f172a;
+  border: 1px solid rgba(71, 85, 105, 0.6);
+  border-radius: 0.5rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-modal__input::placeholder {
+  color: #64748b;
+}
+
+.login-modal__input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.login-modal__telegram {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(51, 65, 85, 0.5);
+}
+
+.login-modal__title {
+  margin-bottom: 1.5rem;
+}
+
+.login-modal__error {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #fca5a5;
+}
+
+.login-modal__submit {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.login-modal__telegram-title {
+  margin-bottom: 0.75rem;
+}
+
+.login-modal__register {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+
+.login-modal__link {
+  color: #38bdf8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login-modal__link:hover {
+  color: #7dd3fc;
+}
+
+.login-modal__link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.login-modal__link-btn:hover {
+  color: #7dd3fc;
 }
 
 /* Слайдер под шапкой */

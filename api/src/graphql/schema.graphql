@@ -8,7 +8,10 @@ scalar Decimal
 
 type User {
   id: ID!
-  email: String!
+  email: String
+  phone: String
+  telegramId: String
+  telegramUsername: String
   firstName: String
   lastName: String
   roles: [String!]!
@@ -158,9 +161,31 @@ input RegisterInput {
   lastName: String
 }
 
-input LoginInput {
-  email: String!
+input RegisterByPhoneInput {
+  phone: String!
   password: String!
+  firstName: String
+  lastName: String
+}
+
+input LoginInput {
+  email: String
+  phone: String
+  password: String!
+}
+
+"""
+Данные от Telegram Login Widget (query string или JSON).
+Сервер проверяет подпись по TELEGRAM_BOT_TOKEN.
+"""
+input TelegramAuthInput {
+  id: Int!
+  first_name: String
+  last_name: String
+  username: String
+  photo_url: String
+  auth_date: Int!
+  hash: String!
 }
 
 type AuthPayload {
@@ -182,7 +207,9 @@ input CreateOrderInput {
 type Mutation {
   # Аутентификация
   register(input: RegisterInput!): AuthPayload!
+  registerByPhone(input: RegisterByPhoneInput!): AuthPayload!
   login(input: LoginInput!): AuthPayload!
+  loginByTelegram(input: TelegramAuthInput!): AuthPayload!
   refreshToken(refreshToken: String!): AuthPayload!
   logout: Boolean!
 
