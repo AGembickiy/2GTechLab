@@ -16,3 +16,11 @@ export const heroSliderQuery = `*[_type == "heroSlider"][0]{
     "order": order
   }
 }`;
+export const teamMembersQuery = `*[_type == "teamMember"] | order(order asc, name asc)`;
+export const adminOrdersQuery = `*[_type == "order"] | order(_createdAt desc)[0...$limit]{
+  _id,
+  "customerDisplay": coalesce(customerName, customerEmail, "—"),
+  status,
+  "createdAt": _createdAt,
+  "totalRub": total
+}`;

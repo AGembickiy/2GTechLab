@@ -7,6 +7,7 @@ import { ApolloServer } from "apollo-server-express";
 import { readFileSync } from "fs";
 import path from "path";
 import { GraphQLScalarType, Kind } from "graphql";
+import depthLimit from "graphql-depth-limit";
 import prisma from "./prisma";
 import { verifyToken, hashPassword, comparePassword, generateToken } from "./modules/auth/utils";
 import { validateTelegramAuth, isTelegramAuthDateValid } from "./modules/auth/telegram";
@@ -38,9 +39,12 @@ async function bootstrap() {
   const app = express();
 
   app.use(helmet());
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
+    : false;
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN ?? "*",
+      origin: corsOrigins || (process.env.NODE_ENV === "production" ? false : true),
       credentials: true,
     }),
   );
@@ -58,6 +62,8 @@ async function bootstrap() {
 
   const server = new ApolloServer({
     typeDefs,
+    introspection: process.env.NODE_ENV !== "production",
+    validationRules: [depthLimit(10)],
     resolvers: {
       Decimal: new GraphQLScalarType({
         name: "Decimal",
@@ -309,7 +315,8 @@ async function bootstrap() {
 
   await server.start();
   server.applyMiddleware({
-    app,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    app: app as any,
     path: "/graphql",
     cors: false,
   });

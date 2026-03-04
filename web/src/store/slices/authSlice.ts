@@ -1,6 +1,8 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 const AUTH_STORAGE_KEY = "2gtechlab_auth";
+const AUTH_COOKIE_NAME = "2gtechlab_token";
+const AUTH_COOKIE_MAX_AGE_DAYS = 7;
 
 function loadStored(): { accessToken: string; userDisplay: string } | null {
   if (typeof window === "undefined") return null;
@@ -17,11 +19,13 @@ function loadStored(): { accessToken: string; userDisplay: string } | null {
 function saveStored(accessToken: string, userDisplay: string) {
   if (typeof window === "undefined") return;
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ accessToken, userDisplay }));
+  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(accessToken)}; path=/; max-age=${AUTH_COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
 }
 
 function clearStored() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(AUTH_STORAGE_KEY);
+  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
 }
 
 interface AuthState {

@@ -12,6 +12,8 @@ import {
   siteSettingsQuery,
   featuredProductsQuery,
   heroSliderQuery,
+  teamMembersQuery,
+  adminOrdersQuery,
 } from "./queries";
 import {
   mockServices,
@@ -22,6 +24,7 @@ import {
   mockReviews,
   mockSiteSettings,
   mockHeroSlider,
+  mockTeamMembers,
 } from "../mockData";
 
 const hasSanity =
@@ -123,3 +126,23 @@ export async function fetchHeroSlider() {
   if (!data?.items?.length) return mockHeroSlider;
   return { items: data.items };
 }
+
+export async function fetchTeamMembers() {
+  if (!hasSanity) return mockTeamMembers;
+  const data = await client.fetch(teamMembersQuery);
+  return data?.length ? data : mockTeamMembers;
+}
+
+export async function fetchAdminOrders(
+  limit: number = 50
+): Promise<{ _id: string; customerDisplay?: string; status?: string; createdAt?: string; totalRub?: number }[]> {
+  if (!hasSanity) return [];
+  try {
+    const data = await client.fetch<AdminOrderRow[]>(adminOrdersQuery, { limit });
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+type AdminOrderRow = { _id: string; customerDisplay?: string; status?: string; createdAt?: string; totalRub?: number };

@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET is required in production");
+}
+const SECRET = process.env.JWT_SECRET || "super-secret-key";
 
 export interface AuthTokenPayload {
   userId: string;
@@ -9,12 +12,12 @@ export interface AuthTokenPayload {
 }
 
 export function generateToken(payload: AuthTokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
 }
 
 export function verifyToken(token: string): AuthTokenPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as AuthTokenPayload;
+    return jwt.verify(token, SECRET) as AuthTokenPayload;
   } catch (error) {
     return null;
   }
