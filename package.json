@@ -2,7 +2,13 @@
   "name": "2gtechlab-root",
   "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix api\" \"npm run dev --prefix web\""
+    "dev": "concurrently \"npm run dev --prefix api\" \"npm run dev --prefix web\"",
+    "up": "docker compose up -d --build",
+    "down": "docker compose down",
+    "lint:web": "npm run lint --prefix web",
+    "typecheck:web": "npm run typecheck --prefix web",
+    "typecheck:api": "npm run typecheck --prefix api",
+    "check": "npm run lint:web && npm run typecheck:web && npm run typecheck:api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

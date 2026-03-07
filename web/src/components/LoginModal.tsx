@@ -27,6 +27,8 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: P
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -98,15 +100,28 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: P
   };
 
   const handleTelegramAuth = useCallback(
-    (tgUser: {
-      id: number;
-      first_name?: string;
-      last_name?: string;
-      username?: string;
-      photo_url?: string;
-      auth_date: number;
-      hash: string;
-    }) => {
+    (user: unknown) => {
+      const tgUser = user as Partial<{
+        id: number;
+        first_name: string;
+        last_name: string;
+        username: string;
+        photo_url: string;
+        auth_date: number;
+        hash: string;
+      }>;
+
+      if (
+        !tgUser ||
+        typeof tgUser !== "object" ||
+        typeof tgUser.id !== "number" ||
+        typeof tgUser.auth_date !== "number" ||
+        typeof tgUser.hash !== "string"
+      ) {
+        setError("Ошибка авторизации Telegram: некорректные данные");
+        return;
+      }
+
       setLoading(true);
       setError(null);
       graphqlRequest<{ loginByTelegram: AuthResponse }>(authMutations.loginByTelegram, {
@@ -144,6 +159,8 @@ export default function LoginModal({ isOpen, onClose, initialMode = "login" }: P
     if (!isOpen) {
       setError(null);
       setPassword("");
+      setFirstName("");
+      setLastName("");
     }
   }, [isOpen]);
 

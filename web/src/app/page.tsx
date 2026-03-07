@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ServiceBenefits from "@/components/ServiceBenefits";
 
 export default function HomePage() {
   const features = [
@@ -43,20 +44,32 @@ export default function HomePage() {
   return (
     <div className="home-content">
       <div className="cta-row">
-        <Link href="/order" className="cta-btn cta-btn--blue">ЗАКАЗАТЬ</Link>
-        <Link href="/catalog" className="cta-btn cta-btn--purple">КУПИТЬ</Link>
-        <Link href="/models" className="cta-btn cta-btn--blue">МОДЕЛИ</Link>
+        <div>
+          <Link href="/order" className="cta-btn cta-btn--blue">ЗАКАЗАТЬ</Link>
+        </div>
+        <div>
+          <Link href="/catalog" className="cta-btn cta-btn--purple">КУПИТЬ</Link>
+        </div>
+        <div>
+          <Link href="/models" className="cta-btn cta-btn--blue">МОДЕЛИ</Link>
+        </div>
       </div>
       <div className="features-grid">
         {features.map((f, i) => (
-          <div key={i} className="feature-tile group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
-            <div className="feature-tile__icon group-hover:scale-125 transition-transform duration-500 ease-out text-blue-400">{f.icon}</div>
-            <div className="flex flex-col">
-              <div><span className="feature-tile__text group-hover:text-blue-300 transition-colors">{f.text}</span></div>
-              <div><span className="feature-tile__subtext">{f.subtext}</span></div>
+          <div key={i}>
+            <div className="feature-tile group hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300">
+              <div className="feature-tile__icon group-hover:scale-125 transition-transform duration-500 ease-out text-blue-400">{f.icon}</div>
+              <div className="flex flex-col">
+                <div><span className="feature-tile__text group-hover:text-blue-300 transition-colors">{f.text}</span></div>
+                <div><span className="feature-tile__subtext">{f.subtext}</span></div>
+              </div>
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-12">
+        <ServiceBenefits />
       </div>
     </div>
   );

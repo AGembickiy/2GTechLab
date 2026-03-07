@@ -6,6 +6,7 @@ import { faq } from "./faq";
 import { review } from "./review";
 import { siteSettings } from "./siteSettings";
 import { heroSlider } from "./heroSlider";
+import { teamMember } from "./teamMember";
 
 export const schemaTypes = [
   service,
@@ -16,4 +17,5 @@ export const schemaTypes = [
   review,
   siteSettings,
   heroSlider,
+  teamMember,
 ];

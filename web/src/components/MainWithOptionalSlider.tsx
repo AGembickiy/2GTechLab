@@ -15,9 +15,9 @@ export default function MainWithOptionalSlider({
   const showSlider = pathname === "/" && sliderItems.length > 0;
 
   return (
-    <>
+    <main className="app-main">
       {showSlider && <HeroSlider items={sliderItems} />}
-      <main className="app-main">{children}</main>
-    </>
+      {children}
+    </main>
   );
 }

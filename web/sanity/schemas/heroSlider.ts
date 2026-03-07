@@ -36,7 +36,7 @@ export const heroSlider = defineType({
           ],
           preview: {
             select: { alt: "alt", media: "image" },
-            prepare({ alt, media }: { alt?: string; media?: unknown }) {
+            prepare({ alt, media }: { alt?: string; media?: any }) {
               return {
                 title: alt || "Фото слайдера",
                 media,

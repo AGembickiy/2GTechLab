@@ -1,5 +1,7 @@
 import CatalogGrid from "@components/CatalogGrid";
 
+export const dynamic = "force-dynamic";
+
 type ApiProduct = {
   id: string;
   slug: string;

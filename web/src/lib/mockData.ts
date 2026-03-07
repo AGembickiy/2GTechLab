@@ -87,3 +87,45 @@ export const mockHeroSlider = {
     },
   ],
 };
+
+export const mockTeamMembers = [
+  {
+    _id: "tm1",
+    name: "Георгий Глазков",
+    role: "Основатель 2GTechLab, инженер‑технолог",
+    description:
+      "Отвечает за технологию печати, подбор материалов и контроль качества. Более 7 лет опыта в 3D‑печати и прототипировании.",
+    photo: null,
+    imageUrl: "https://placehold.co/400x400?text=Team+1",
+    certificates: [
+      {
+        title: "Курс по аддитивным технологиям",
+        provider: "Skillbox",
+        year: "2022",
+      },
+      {
+        title: "Продвинутое 3D‑моделирование",
+        provider: "XYZ Academy",
+        year: "2021",
+      },
+    ],
+    order: 0,
+  },
+  {
+    _id: "tm2",
+    name: "Александр Иванов",
+    role: "3D‑моделлер",
+    description:
+      "Проектирует модели для печати, адаптирует под технологические ограничения и требования к прочности.",
+    photo: null,
+    imageUrl: "https://placehold.co/400x400?text=Team+2",
+    certificates: [
+      {
+        title: "3D‑моделирование в Fusion 360",
+        provider: "Coursera",
+        year: "2020",
+      },
+    ],
+    order: 1,
+  },
+];
