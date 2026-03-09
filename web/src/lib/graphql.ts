@@ -1,4 +1,18 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/graphql";
+const ENV_API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!ENV_API_URL && process.env.NODE_ENV === "production") {
+  throw new Error("NEXT_PUBLIC_API_URL is required in production");
+}
+
+if (!ENV_API_URL && process.env.NODE_ENV !== "production") {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "NEXT_PUBLIC_API_URL is not set, falling back to http://localhost:4000/graphql. " +
+      "Set NEXT_PUBLIC_API_URL in .env.local for consistent behavior.",
+  );
+}
+
+const API_URL = ENV_API_URL ?? "http://localhost:4000/graphql";
 
 export async function graphqlRequest<T>(
   query: string,

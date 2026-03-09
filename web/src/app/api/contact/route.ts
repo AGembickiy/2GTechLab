@@ -54,14 +54,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    const { name, email, message } = parsed.data;
+    const { email } = parsed.data;
 
     // TODO: Интегрировать Resend, SendGrid или Nodemailer для отправки email
     // const resend = new Resend(process.env.RESEND_API_KEY);
     // await resend.emails.send({ from: "...", to: process.env.CONTACT_EMAIL, subject: `...`, replyTo: email, text: message });
 
     if (process.env.NODE_ENV === "development") {
-      console.log("Contact form submitted");
+      // eslint-disable-next-line no-console
+      console.log("Contact form submitted", { email });
     }
 
     return NextResponse.json({ success: true });

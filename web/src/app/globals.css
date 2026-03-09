@@ -125,6 +125,92 @@ a {
   transition: all 0.2s ease;
 }
 
+.order-mode-pill {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.order-mode-pill:hover {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(56, 189, 248, 0.25),
+    rgba(37, 99, 235, 0.15)
+  );
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+}
+
+.order-mode-pill--active {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(56, 189, 248, 0.25),
+    rgba(37, 99, 235, 0.15)
+  );
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+}
+
+.order-mode-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 360px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.9);
+  cursor: pointer;
+  user-select: none;
+}
+
+.order-mode-toggle__labels {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.order-mode-toggle__label {
+  flex: 1 1 0;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
+.order-mode-toggle__label--active {
+  color: #e5e7eb;
+  font-weight: 600;
+}
+
+.order-mode-toggle__thumb {
+  position: absolute;
+  inset: 3px;
+  width: calc(50% - 6px);
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(56, 189, 248, 0.25),
+    rgba(37, 99, 235, 0.15)
+  );
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+  transform: translateX(0);
+  transition: transform 0.2s ease;
+}
+
+.order-mode-toggle--sketch .order-mode-toggle__thumb {
+  transform: translateX(100%);
+}
+
 .app-main {
   flex: 1;
   min-height: 0;
@@ -291,13 +377,17 @@ a {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-  justify-content: stretch;
+  justify-content: space-between;
   width: 100%;
+  padding: 0 1.5rem;
 }
 
-.cta-row .cta-btn {
-  flex: 1;
-  min-width: 100px;
+.cta-row > div {
+  flex: 1 1 0;
+}
+
+.cta-row > div .cta-btn {
+  width: 100%;
 }
 
 .cta-btn {
@@ -549,6 +639,7 @@ a {
   width: 100%;
   height: 50vh;
   min-height: 220px;
+  margin-bottom: 1.25rem;
   background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
   border-bottom: 1px solid rgba(31, 41, 55, 0.5);
   overflow: hidden;

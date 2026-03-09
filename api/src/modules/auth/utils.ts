@@ -1,10 +1,13 @@
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload, Secret } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("JWT_SECRET is required in production");
+function getJwtSecret(): Secret {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required");
+  }
+  return secret;
 }
-const SECRET = process.env.JWT_SECRET || "super-secret-key";
 
 export interface AuthTokenPayload {
   userId: string;
@@ -12,13 +15,27 @@ export interface AuthTokenPayload {
 }
 
 export function generateToken(payload: AuthTokenPayload): string {
-  return jwt.sign(payload, SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" });
 }
 
 export function verifyToken(token: string): AuthTokenPayload | null {
   try {
-    return jwt.verify(token, SECRET) as AuthTokenPayload;
-  } catch (error) {
+    const decoded = jwt.verify(token, getJwtSecret());
+
+    if (typeof decoded === "string" || !decoded) {
+      return null;
+    }
+
+    const payload = decoded as JwtPayload;
+    if (typeof payload.userId !== "string" || !Array.isArray(payload.roles)) {
+      return null;
+    }
+
+    return {
+      userId: payload.userId,
+      roles: payload.roles as string[],
+    };
+  } catch {
     return null;
   }
 }

@@ -27,7 +27,7 @@ export interface ShippingProviderAdapter {
 }
 
 export class DhlAdapter implements ShippingProviderAdapter {
-  async getRates(request: ShippingRateRequest): Promise<ShippingRate[]> {
+  async getRates(_request: ShippingRateRequest): Promise<ShippingRate[]> {
     // Заглушка для DHL API
     return [
       {
@@ -51,7 +51,7 @@ export class DhlAdapter implements ShippingProviderAdapter {
 }
 
 export class FedexAdapter implements ShippingProviderAdapter {
-  async getRates(request: ShippingRateRequest): Promise<ShippingRate[]> {
+  async getRates(_request: ShippingRateRequest): Promise<ShippingRate[]> {
     return [
       {
         provider: "fedex",

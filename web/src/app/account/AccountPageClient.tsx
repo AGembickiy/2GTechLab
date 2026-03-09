@@ -141,10 +141,10 @@ export default function AccountPageClient() {
 
   useEffect(() => {
     if (!TELEGRAM_BOT_USERNAME) return;
-    (window as unknown as { onTelegramAuth?: (user: unknown) => void }).onTelegramAuth =
+    (window as unknown as { onTelegramAuth?: (_user: unknown) => void }).onTelegramAuth =
       handleTelegramAuth;
     return () => {
-      delete (window as unknown as { onTelegramAuth?: (user: unknown) => void }).onTelegramAuth;
+      delete (window as unknown as { onTelegramAuth?: (_user: unknown) => void }).onTelegramAuth;
     };
   }, [handleTelegramAuth]);
 

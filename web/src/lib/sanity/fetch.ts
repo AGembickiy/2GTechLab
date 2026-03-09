@@ -19,8 +19,6 @@ import {
   mockServices,
   mockPortfolio,
   mockProducts,
-  mockBlogPosts,
-  mockFaq,
   mockReviews,
   mockSiteSettings,
   mockHeroSlider,

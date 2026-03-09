@@ -35,16 +35,64 @@ const mockProducts = [
   },
 ];
 
+const AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
+const AUTH_RATE_LIMIT_MAX_ATTEMPTS = 10;
+
+const authRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkAuthRateLimit(ip: string): boolean {
+  const key = ip || "unknown";
+  const now = Date.now();
+  const entry = authRateLimitMap.get(key);
+  if (!entry) {
+    authRateLimitMap.set(key, { count: 1, resetAt: now + AUTH_RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    authRateLimitMap.set(key, { count: 1, resetAt: now + AUTH_RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= AUTH_RATE_LIMIT_MAX_ATTEMPTS) {
+    return false;
+  }
+  entry.count += 1;
+  return true;
+}
+
+function ensurePasswordComplexity(password: string): void {
+  if (password.length < 8) {
+    throw new Error("Пароль должен содержать не менее 8 символов");
+  }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    throw new Error("Пароль должен содержать буквы и цифры");
+  }
+}
+
 async function bootstrap() {
   const app = express();
 
   app.use(helmet());
-  const corsOrigins = process.env.CORS_ORIGIN
+
+  const defaultDevOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+  ];
+
+  const configuredOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean)
-    : false;
+    : [];
+
+  const corsOrigins =
+    configuredOrigins.length > 0
+      ? configuredOrigins
+      : process.env.NODE_ENV === "production"
+        ? []
+        : defaultDevOrigins;
+
   app.use(
     cors({
-      origin: corsOrigins || (process.env.NODE_ENV === "production" ? false : true),
+      origin: corsOrigins.length > 0 ? corsOrigins : false,
       credentials: true,
     }),
   );
@@ -133,8 +181,13 @@ async function bootstrap() {
         }),
       },
       Mutation: {
-        register: async (_parent, { input }) => {
+        register: async (_parent, { input }, context) => {
+          if (!checkAuthRateLimit(context.ip)) {
+            throw new Error("Слишком много попыток. Попробуйте позже.");
+          }
+
           const { email, password, firstName, lastName } = input;
+          ensurePasswordComplexity(password);
           const existingUser = await prisma.user.findUnique({ where: { email } });
           if (existingUser) {
             throw new Error("Пользователь с таким email уже зарегистрирован");
@@ -170,7 +223,11 @@ async function bootstrap() {
             user: { ...user, roles },
           };
         },
-        registerByPhone: async (_parent, { input }) => {
+        registerByPhone: async (_parent, { input }, context) => {
+          if (!checkAuthRateLimit(context.ip)) {
+            throw new Error("Слишком много попыток. Попробуйте позже.");
+          }
+
           const { phone, password, firstName, lastName } = input;
           const normalized = normalizePhone(phone);
           if (normalized.length < 10) {
@@ -183,6 +240,7 @@ async function bootstrap() {
             throw new Error("Пользователь с таким номером уже зарегистрирован");
           }
 
+          ensurePasswordComplexity(password);
           const passwordHash = await hashPassword(password);
           const user = await prisma.user.create({
             data: {
@@ -213,7 +271,11 @@ async function bootstrap() {
             user: { ...user, roles },
           };
         },
-        login: async (_parent, { input }) => {
+        login: async (_parent, { input }, context) => {
+          if (!checkAuthRateLimit(context.ip)) {
+            throw new Error("Слишком много попыток. Попробуйте позже.");
+          }
+
           const { email, phone, password } = input;
           if (!email && !phone) {
             throw new Error("Укажите email или номер телефона");
@@ -243,7 +305,11 @@ async function bootstrap() {
             user: { ...user, roles },
           };
         },
-        loginByTelegram: async (_parent, { input }) => {
+        loginByTelegram: async (_parent, { input }, context) => {
+          if (!checkAuthRateLimit(context.ip)) {
+            throw new Error("Слишком много попыток. Попробуйте позже.");
+          }
+
           const botToken = process.env.TELEGRAM_BOT_TOKEN;
           if (!botToken) {
             throw new Error("Вход через Telegram временно недоступен");
@@ -309,7 +375,7 @@ async function bootstrap() {
       const authHeader = req.headers.authorization || "";
       const token = authHeader.replace("Bearer ", "");
       const user = token ? verifyToken(token) : null;
-      return { user, prisma };
+      return { user, prisma, ip: req.ip };
     },
   });
 

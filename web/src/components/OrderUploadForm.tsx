@@ -100,8 +100,8 @@ async function convertToStlIfPossible(file: File): Promise<File | null> {
     const exporter: any = new STLExporter();
     const result = exporter.parse(root, { binary: true }) as ArrayBuffer | string;
 
-    const stlArrayBuffer: ArrayBuffer =
-      result instanceof ArrayBuffer ? result : new TextEncoder().encode(result).buffer;
+    const stlArrayBuffer =
+      result instanceof ArrayBuffer ? result : new TextEncoder().encode(result);
 
     const blob = new Blob([stlArrayBuffer], { type: "model/stl" });
     const newName = file.name.replace(/\.[^./\\]+$/, ".stl");
@@ -232,14 +232,41 @@ export default function OrderUploadForm() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-[var(--foreground)]">Оформить заказ</h2>
-            <p className="max-w-2xl text-sm text-[var(--muted)]">
-              Добавьте 3D‑модель (STL, OBJ, STEP и др.), а также эскизы или фотографии. Файлы пока остаются только у вас
-              — это локальный предпросмотр перед отправкой полной заявки.
-            </p>
           </div>
-          <div className="hidden items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-medium text-emerald-200 sm:inline-flex">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            3D‑предпросмотр в реальном времени
+        </div>
+
+        <div className="mt-10 text-xs text-[var(--muted)]">
+          <div className="inline-flex flex-col">
+            <h4 className="text-[10px] font-semibold uppercase tracking-[0.25em] text-sky-300/80">
+              Режим заявки:
+            </h4>
+            <button
+              type="button"
+              className={`order-mode-toggle mt-0.5 ${
+                mode === "sketch" ? "order-mode-toggle--sketch" : ""
+              }`}
+              role="switch"
+              aria-checked={mode === "sketch"}
+              onClick={() => setMode(mode === "model" ? "sketch" : "model")}
+            >
+              <div className="order-mode-toggle__thumb" aria-hidden="true" />
+              <div className="order-mode-toggle__labels">
+                <span
+                  className={`order-mode-toggle__label ${
+                    mode === "model" ? "order-mode-toggle__label--active" : ""
+                  }`}
+                >
+                  3D‑модель
+                </span>
+                <span
+                  className={`order-mode-toggle__label ${
+                    mode === "sketch" ? "order-mode-toggle__label--active" : ""
+                  }`}
+                >
+                  Эскиз / фотографии
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -259,16 +286,8 @@ export default function OrderUploadForm() {
                 </label>
                 <label className="group flex cursor-pointer flex-col gap-2 rounded-xl border border-dashed border-[var(--border)] bg-black/40 px-4 py-3 transition-colors hover:border-[var(--accent)] hover:bg-black/60">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="space-y-1 text-sm">
-                      <p className="font-medium text-[var(--foreground)]">
-                        Перетащите файлы сюда или выберите на устройстве
-                      </p>
-                      <p className="text-xs text-[var(--muted)]">
-                        Поддерживаются STL, OBJ, STEP, IGES, FBX, GLTF и другие популярные 3D‑форматы.
-                      </p>
-                    </div>
                     <span className="inline-flex items-center rounded-lg bg-[var(--accent)] px-4 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors group-hover:bg-[var(--accent-hover)]">
-                      Выбрать файлы
+                      Загрузи файл 3D-модели
                     </span>
                   </div>
                   <input
@@ -326,7 +345,6 @@ export default function OrderUploadForm() {
                 <label className="group flex cursor-pointer flex-col gap-2 rounded-xl border border-dashed border-[var(--border)] bg-black/40 px-4 py-3 transition-colors hover:border-[var(--accent)] hover:bg-black/60">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1 text-sm">
-                      <p className="font-medium text-[var(--foreground)]">Добавьте референсы и примеры</p>
                       <p className="text-xs text-[var(--muted)]">
                         PNG, JPG или WebP‑изображения помогут нам точнее понять желаемый результат.
                       </p>
@@ -445,35 +463,6 @@ export default function OrderUploadForm() {
         </form>
       </section>
 
-      <div className="mt-10 text-xs text-[var(--muted)]">
-        <div className="inline-flex flex-wrap items-center gap-3 rounded-full border border-[var(--border)] bg-black/40 px-3 py-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-sky-300/80">
-            Режим заявки
-          </span>
-          <label className="inline-flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="radio"
-              name="order-mode"
-              value="model"
-              checked={mode === "model"}
-              onChange={() => setMode("model")}
-              className="h-3.5 w-3.5 cursor-pointer border-[var(--border)] bg-black accent-[var(--accent)]"
-            />
-            <span className="text-[11px] text-[var(--foreground)]">3D‑модель</span>
-          </label>
-          <label className="inline-flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="radio"
-              name="order-mode"
-              value="sketch"
-              checked={mode === "sketch"}
-              onChange={() => setMode("sketch")}
-              className="h-3.5 w-3.5 cursor-pointer border-[var(--border)] bg-black accent-[var(--accent)]"
-            />
-            <span className="text-[11px] text-[var(--foreground)]">Эскиз / фотографии</span>
-          </label>
-        </div>
-      </div>
     </>
   );
 }

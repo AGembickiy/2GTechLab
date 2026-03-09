@@ -20,8 +20,8 @@ const AVAILABLE_COLORS = [
 
 type Props = {
   file: File | null;
-  onVolumeChange?: (volumeMm3: number, volumeCm3: number) => void;
-  onScaleChange?: (scale: number) => void;
+  onVolumeChange?: (_volumeMm3: number, _volumeCm3: number) => void;
+  onScaleChange?: (_scale: number) => void;
 };
 
 type SupportedType = "stl" | "obj" | "unknown";
@@ -85,7 +85,7 @@ function computeMaxScaleForPrinter(size: THREE.Vector3, units: ModelUnits): numb
 
 type PaintableMeshProps = {
   geometry: THREE.BufferGeometry;
-  onFacePaint?: (faceIndex: number) => void;
+  onFacePaint?: (_faceIndex: number) => void;
   scaleFactor: number;
   paintColor: THREE.Color;
 };
@@ -152,6 +152,12 @@ export default function ModelViewer3D({ file, onVolumeChange, onScaleChange }: P
     setState({ status: "loading" });
 
     async function load() {
+      if (!file) {
+        setState({ status: "idle" });
+        if (onVolumeChange) onVolumeChange(0, 0);
+        return;
+      }
+
       try {
         if (type === "stl") {
           const { STLLoader } = await import("three/examples/jsm/loaders/STLLoader.js");
@@ -182,14 +188,18 @@ export default function ModelViewer3D({ file, onVolumeChange, onScaleChange }: P
               URL.revokeObjectURL(objectUrl);
               if (canceled) return;
 
-              const { BufferGeometryUtils } = await import("three/examples/jsm/utils/BufferGeometryUtils.js");
+              const BufferGeometryUtils = await import(
+                "three/examples/jsm/utils/BufferGeometryUtils.js"
+              );
 
               let merged: THREE.BufferGeometry | null = null;
               obj.traverse((child) => {
                 if ((child as THREE.Mesh).isMesh) {
                   const mesh = child as THREE.Mesh;
                   const g = mesh.geometry as THREE.BufferGeometry;
-                  merged = merged ? BufferGeometryUtils.mergeGeometries([merged, g]) : g.clone();
+                  merged = merged
+                    ? BufferGeometryUtils.mergeGeometries([merged, g])
+                    : g.clone();
                 }
               });
 
@@ -199,14 +209,16 @@ export default function ModelViewer3D({ file, onVolumeChange, onScaleChange }: P
                 return;
               }
 
-              merged.center();
-              const bbox = new THREE.Box3().setFromObject(new THREE.Mesh(merged));
+              const mergedGeometry = merged as THREE.BufferGeometry;
+
+              mergedGeometry.center();
+              const bbox = new THREE.Box3().setFromObject(new THREE.Mesh(mergedGeometry));
               const size = bbox.getSize(new THREE.Vector3());
               const maxDim = Math.max(size.x, size.y, size.z) || 1;
-              const normalized = merged.clone();
+              const normalized = mergedGeometry.clone();
               normalized.scale(2 / maxDim, 2 / maxDim, 2 / maxDim);
 
-              const volumeMm3 = computeVolume(merged);
+              const volumeMm3 = computeVolume(mergedGeometry);
 
               setState({ status: "ready", geometry: normalized, volumeMm3, size });
               if (onVolumeChange) onVolumeChange(volumeMm3, volumeMm3 / 1000);
