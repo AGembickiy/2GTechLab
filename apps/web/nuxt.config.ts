@@ -4,6 +4,15 @@ import { fileURLToPath } from 'node:url';
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
+  runtimeConfig: {
+    public: {
+      /** Django REST API (print pipeline) */
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000/api',
+      /** Прямой WebSocket Moonraker (опционально). Если пусто — только опрос через Django. */
+      moonrakerWsUrl: process.env.NUXT_PUBLIC_MOONRAKER_WS_URL || '',
+    },
+  },
+
   css: ['~/assets/css/main.css'],
 
   modules: ['@nuxtjs/tailwindcss', '@nuxt/ui'],

@@ -5,6 +5,10 @@ interface OrderFormState {
   copies: number;
   material: 'pla' | 'petg' | 'abs' | '';
   color: 'white' | 'black' | 'gray' | 'custom' | '';
+  amsSlots: Array<{
+    material: 'pla' | 'petg' | 'abs' | '';
+    color: 'white' | 'black' | 'gray' | 'custom' | '';
+  }>;
   quality: 'draft' | 'standard' | 'high';
   printType: 'single' | 'multi';
   postProcessing: Array<'sanding' | 'priming' | 'painting'>;
@@ -42,6 +46,7 @@ export function useOrderForm(): { form: OrderFormState; derived: OrderDerived } 
     copies: 1,
     material: '',
     color: '',
+    amsSlots: Array.from({ length: 4 }, () => ({ material: '', color: '' })),
     quality: 'standard',
     printType: 'single',
     postProcessing: [],

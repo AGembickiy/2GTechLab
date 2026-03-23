@@ -1,16 +1,24 @@
 <template>
-  <section class="hero-slider" aria-label="Фото мастерской">
-    <div class="hero-slider__inner" role="presentation">
+  <section
+    class="relative h-[50vh] min-h-[220px] w-full overflow-hidden bg-[radial-gradient(circle_at_center,_#0f172a_0%,_#020617_100%)]"
+    aria-label="Фото мастерской"
+  >
+    <div class="relative mx-auto h-full w-full max-w-[1400px]" role="presentation">
       <div
         v-for="(item, index) in items"
         :key="item.src"
-        class="hero-slider__item"
-        :class="[{ 'hero-slider__item--active': index === activeIndex }, 'transition-all duration-500 ease-out']"
+        class="absolute aspect-[4/3] cursor-pointer transition-all duration-500 ease-out"
+        :class="[{ 'z-[1000]': index === activeIndex }, '']"
         :style="itemStyle(index)"
         @click.stop="toggleActive(index)"
       >
-        <div class="hero-slider__frame">
-          <img :src="item.src" :alt="item.alt" class="hero-slider__img" />
+        <div class="h-full w-full overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          <img
+            :src="item.src"
+            :alt="item.alt"
+            loading="lazy"
+            class="block h-full w-full object-cover transition-transform duration-500 hover:scale-[1.05]"
+          />
         </div>
       </div>
     </div>
@@ -18,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount } from 'vue';
+import { onMounted, onBeforeUnmount, ref } from 'vue';
 const items = [
   { src: '/slider/slide-1.avif', alt: '3D‑принтер — синий объект' },
   { src: '/slider/slide-2.avif', alt: '3D‑принтер — механическая деталь' },

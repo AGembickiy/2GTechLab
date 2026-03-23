@@ -1,10 +1,14 @@
 {
-  "name": "2gtechlab-root",
-  "version": "1.0.0",
+  "name": "2gtechlab",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix web run dev",
-    "build": "npm --prefix web run build",
-    "start": "npm --prefix web run start"
+    "dev": "cd apps/web && npm run dev",
+    "dev:all": "bash scripts/dev-all.sh",
+    "dev:api": "cd backend && . .venv/bin/activate && python manage.py runserver 0.0.0.0:8000",
+    "build": "cd apps/web && npm run build",
+    "start": "cd apps/web && npm run preview"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }

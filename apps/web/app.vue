@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-dvh bg-slate-950 text-slate-100">
+  <div class="min-h-dvh overflow-x-hidden bg-slate-950 text-slate-100">
     <header
       class="sticky top-0 z-50 bg-slate-950/70 backdrop-blur-md"
     >
