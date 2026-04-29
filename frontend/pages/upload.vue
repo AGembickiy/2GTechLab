@@ -193,6 +193,9 @@ function onStatsChange(payload: { selectedCount: number; paintedFaces: number; t
 function onMaterialChange(slot: SlotRow) {
   const mat = materials.value.find((m) => m.id === slot.materialId);
   slot.material = mat ? { ...mat } : null;
+  nextTick(() => {
+    (viewerRef.value as { refreshVertexColorsFromSlots?: () => void } | null)?.refreshVertexColorsFromSlots?.();
+  });
 }
 
 function onSurfaceClick(data: ThreeViewerSurfaceClickPayload) {

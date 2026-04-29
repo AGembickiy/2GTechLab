@@ -44,3 +44,19 @@ class OrderViewSet(viewsets.ModelViewSet):
             'popular_materials': Order.objects.values('material__name').annotate(count=Count('id')).order_by('-count')[:5]
         }
         return Response(data)
+
+    @action(detail=False, methods=['get'])
+    def finance(self, request):
+        from django.db.models import Sum, Avg
+
+        completed_orders = Order.objects.filter(status='completed')
+        in_progress_orders = Order.objects.exclude(status__in=['completed', 'failed'])
+
+        data = {
+            'total_revenue': completed_orders.aggregate(Sum('final_price'))['final_price__sum'] or 0,
+            'avg_check': completed_orders.aggregate(Avg('final_price'))['final_price__avg'] or 0,
+            'completed_orders_count': completed_orders.count(),
+            'in_progress_orders_count': in_progress_orders.count(),
+            'estimated_pipeline_value': in_progress_orders.aggregate(Sum('final_price'))['final_price__sum'] or 0,
+        }
+        return Response(data)

@@ -42,6 +42,16 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { rgb01ForFacePaint } from '~/utils/threeViewerColors';
+import { resolveSelectionModesFromPointer } from '~/utils/threeViewerPointerModes';
+import { resolveRecolorScope } from '~/utils/threeViewerRecolorScope';
+import { resolveSelectionFlow } from '~/utils/threeViewerSelectionFlow';
+import { popUndoSnapshot, pushUndoSnapshot } from '~/utils/threeViewerUndoStack';
+import {
+  VIEWER_CLEAR_COLOR_HEX,
+  VIEWER_SELECTION_OVERLAY_OPACITY,
+  VIEWER_TONE_MAPPING_EXPOSURE,
+} from '~/utils/threeViewerRenderConfig';
 
 const props = withDefaults(
   defineProps<{
@@ -70,19 +80,21 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:params', params: { scale: number; rotationX: number; rotationY: number; rotationZ: number }): void;
-  (e: 'stats-change', stats: { selectedCount: number; paintedFaces: number; totalFaces: number }): void;
+  (e: 'stats-change', stats: { selectedCount: number; paintedFaces: number; totalFaces: number; undoAvailable: boolean }): void;
   (e: 'surface-click', payload: { id: string; index: number; type: string } | null): void;
   (e: 'error', message: string): void;
   (e: 'material-select', materialId: number): void;
 }>();
 
 const DEFAULT_COLOR_HEX = '#7dd3fc';
-const SELECTION_HIGHLIGHT_HEX = '#fbbf24';
+const SELECTION_HIGHLIGHT_HEX = '#ca8a04';
 const POS_KEY_EPS = 0.001;
 const POLYGON_ANGLE_DEG = 15;
-const DEBUG_SELECTION = true;
+const DEBUG_SELECTION = false;
+const MAX_UNDO_HISTORY = 50;
 
 let viewer: any = null;
+let undoHistory: Uint8Array[] = [];
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 const canvasWrap = ref<HTMLElement | null>(null);
@@ -176,7 +188,7 @@ const pointerDown = ref<{
   y: number;
   pointerId: number;
   shiftKey: boolean;
-  multiKey: boolean;
+  ctrlOrMetaKey: boolean;
 } | null>(null);
 const pointerMoveThresholdPx = 12;
 
@@ -185,30 +197,58 @@ function emitStats() {
     selectedCount: selectedSelectionIds.value.size,
     paintedFaces: viewer?.nonZeroFaceCount ?? 0,
     totalFaces: viewer?.triangleCount ?? 0,
+    undoAvailable: undoHistory.length > 0,
   });
-}
-
-function hexToRgb01(hex: string): [number, number, number] {
-  const normalized = (hex || DEFAULT_COLOR_HEX).trim().replace('#', '');
-  if (normalized.length !== 6) return [0.49, 0.83, 0.99];
-  const r = parseInt(normalized.slice(0, 2), 16);
-  const g = parseInt(normalized.slice(2, 4), 16);
-  const b = parseInt(normalized.slice(4, 6), 16);
-  return [r / 255, g / 255, b / 255];
-}
-
-function blendRgb01(a: [number, number, number], b: [number, number, number], t: number): [number, number, number] {
-  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
 
 function slotColorHex(slotIndex: number): string {
   return props.slotColors?.[slotIndex] ?? DEFAULT_COLOR_HEX;
 }
 
-function getFaceRgbForRender(slotIndex: number, highlighted: boolean): [number, number, number] {
-  const base = hexToRgb01(slotColorHex(slotIndex));
-  if (!highlighted) return base;
-  return hexToRgb01(SELECTION_HIGHLIGHT_HEX);
+/** Короткий лог шага предпросмотра (без объектов). */
+function logPreviewStep(message: string) {
+  if (!import.meta.client) return;
+  console.info(message);
+}
+
+function logPaintToConsole(
+  kind: 'выбор' | 'покраска' | 'снятие_выделения' | 'перекраска_слота',
+  detail: {
+    polygonId?: number;
+    mode?: 'polygon' | 'surface';
+    slotIndex?: number;
+    colorHex?: string;
+    triangles?: number;
+    slotFaces?: number;
+    scope?: 'вся_модель' | 'выделение' | 'по_слоту';
+  },
+) {
+  const n = (detail.slotIndex ?? 0) + 1;
+  if (kind === 'перекраска_слота') {
+    if (detail.scope === 'выделение') {
+      logPreviewStep(`Предпросмотр: задан цвет слота ${n} только для выделения`);
+    } else {
+      logPreviewStep(`Предпросмотр: задан цвет слота ${n} для всей модели в этом слоте`);
+    }
+    return;
+  }
+  if (kind === 'снятие_выделения') {
+    logPreviewStep('Предпросмотр: снято выделение');
+    return;
+  }
+  if (kind === 'выбор') {
+    if (detail.mode === 'surface') {
+      logPreviewStep(`Предпросмотр: выбрана грань, слот ${n}`);
+    } else {
+      logPreviewStep(`Предпросмотр: выбран полигон, слот ${n}`);
+    }
+    return;
+  }
+  if (detail.mode === 'surface') {
+    logPreviewStep(`Предпросмотр: выбрана грань, цвет слота ${n}`);
+  } else {
+    logPreviewStep(`Предпросмотр: выбран полигон, цвет слота ${n}`);
+  }
 }
 
 function applySlotColorToFace(faceIndex: number, rgb01: [number, number, number]) {
@@ -280,11 +320,10 @@ function syncSelectionOverlay() {
   const overlayMaterial = new THREE.MeshBasicMaterial({
     color: SELECTION_HIGHLIGHT_HEX,
     transparent: true,
-    opacity: 0.9,
+    opacity: VIEWER_SELECTION_OVERLAY_OPACITY,
     side: THREE.DoubleSide,
     depthTest: false,
     depthWrite: false,
-    toneMapped: false,
   });
   const overlayMesh = new THREE.Mesh(overlayGeometry, overlayMaterial);
   overlayMesh.renderOrder = 999;
@@ -296,14 +335,28 @@ function syncSelectionOverlay() {
   viewer.selectionOverlayMesh = overlayMesh;
 }
 
-function repaintFace(faceIndex: number, highlighted: boolean) {
+function repaintFace(faceIndex: number) {
   if (!viewer) return;
   const slotIndex = viewer.faceSlotByFaceIndex[faceIndex];
-  applySlotColorToFace(faceIndex, getFaceRgbForRender(slotIndex, highlighted));
+  applySlotColorToFace(faceIndex, rgb01ForFacePaint(slotColorHex(slotIndex)));
 }
 
 function paintFaces(faceIndices: number[], slotIndex: number) {
   if (!viewer) return;
+  let hasChanges = false;
+  for (const faceIndex of faceIndices) {
+    if (faceIndex < 0 || faceIndex >= viewer.triangleCount) continue;
+    if (viewer.faceSlotByFaceIndex[faceIndex] !== slotIndex) {
+      hasChanges = true;
+      break;
+    }
+  }
+  if (!hasChanges) return;
+  undoHistory = pushUndoSnapshot({
+    history: undoHistory,
+    current: viewer.faceSlotByFaceIndex,
+    maxEntries: MAX_UNDO_HISTORY,
+  });
   for (const faceIndex of faceIndices) {
     if (faceIndex < 0 || faceIndex >= viewer.triangleCount) continue;
     const prevSlot = viewer.faceSlotByFaceIndex[faceIndex];
@@ -311,7 +364,7 @@ function paintFaces(faceIndices: number[], slotIndex: number) {
     if (prevSlot === 0 && slotIndex !== 0) viewer.nonZeroFaceCount += 1;
     if (prevSlot !== 0 && slotIndex === 0) viewer.nonZeroFaceCount -= 1;
     viewer.faceSlotByFaceIndex[faceIndex] = slotIndex;
-    applySlotColorToFace(faceIndex, hexToRgb01(slotColorHex(slotIndex)));
+    applySlotColorToFace(faceIndex, rgb01ForFacePaint(slotColorHex(slotIndex)));
   }
   markColorsDirty();
   emitStats();
@@ -324,11 +377,9 @@ function clearSelectionOnly() {
     emitStats();
     return;
   }
-  for (const f of selectedFaceIndices.value) repaintFace(f, false);
   selectedFaceIndices.value.clear();
   selectedSelectionIds.value.clear();
   syncSelectionOverlay();
-  markColorsDirty();
   lastPicked.value = null;
   emit('surface-click', null);
   emitStats();
@@ -339,9 +390,8 @@ function assignSelectionToActiveSlot() {
   const target = Array.from(selectedFaceIndices.value);
   if (!target.length) return;
   paintFaces(target, props.activeSlotIndex);
-  for (const f of target) repaintFace(f, true);
+  logPreviewStep(`Предпросмотр: выделение назначено на слот ${props.activeSlotIndex + 1}`);
   syncSelectionOverlay();
-  markColorsDirty();
   emitStats();
 }
 
@@ -355,11 +405,34 @@ function removeSelection(selectionId: string, faces: number[]) {
   for (const f of faces) selectedFaceIndices.value.delete(f);
 }
 
+/** Пересчитать вершинные цвета по текущим faceSlot и props.slotColors (без смены слотов). */
+function refreshVertexColorsFromSlots() {
+  if (!viewer) return;
+  for (let f = 0; f < viewer.triangleCount; f++) {
+    repaintFace(f);
+  }
+  markColorsDirty();
+  emitStats();
+}
+
 function paintAllToSlot(slotIndex: number) {
   if (!viewer) return;
+  let hasChanges = false;
+  for (let f = 0; f < viewer.triangleCount; f++) {
+    if (viewer.faceSlotByFaceIndex[f] !== slotIndex) {
+      hasChanges = true;
+      break;
+    }
+  }
+  if (!hasChanges) return;
+  undoHistory = pushUndoSnapshot({
+    history: undoHistory,
+    current: viewer.faceSlotByFaceIndex,
+    maxEntries: MAX_UNDO_HISTORY,
+  });
   viewer.faceSlotByFaceIndex.fill(slotIndex);
   viewer.nonZeroFaceCount = slotIndex === 0 ? 0 : viewer.triangleCount;
-  const rgb01 = hexToRgb01(slotColorHex(slotIndex));
+  const rgb01 = rgb01ForFacePaint(slotColorHex(slotIndex));
   const [r, g, b] = rgb01;
   for (let v = 0; v < viewer.vertexCount; v++) {
     const i = v * 3;
@@ -391,13 +464,66 @@ function getSurfaceIdsGroupedBySlot(): Record<number, string[]> {
   return out;
 }
 
+/**
+ * Смена цвета катушки AMS в форме.
+ * Без выделения — новый оттенок у всех граней этого слота.
+ * С выделением — только выделенные грани получают этот слот и новый цвет.
+ */
 function recolorSlot(slotIndex: number) {
   if (!viewer) return;
-  for (let f = 0; f < viewer.triangleCount; f++) {
-    if (viewer.faceSlotByFaceIndex[f] !== slotIndex) continue;
-    repaintFace(f, selectedFaceIndices.value.has(f));
+  const recolorScope = resolveRecolorScope({
+    selectedFacesCount: selectedFaceIndices.value.size,
+  });
+  if (recolorScope === 'none') {
+    logPreviewStep('Предпросмотр: нет выделения — цвет не применён');
+    return;
+  }
+  const rgb01 = rgb01ForFacePaint(slotColorHex(slotIndex));
+  let slotFaces = 0;
+  if (recolorScope === 'selection') {
+    undoHistory = pushUndoSnapshot({
+      history: undoHistory,
+      current: viewer.faceSlotByFaceIndex,
+      maxEntries: MAX_UNDO_HISTORY,
+    });
+    for (const f of selectedFaceIndices.value) {
+      if (f < 0 || f >= viewer.triangleCount) continue;
+      const prevSlot = viewer.faceSlotByFaceIndex[f];
+      if (prevSlot !== slotIndex) {
+        if (prevSlot === 0 && slotIndex !== 0) viewer.nonZeroFaceCount += 1;
+        if (prevSlot !== 0 && slotIndex === 0) viewer.nonZeroFaceCount -= 1;
+        viewer.faceSlotByFaceIndex[f] = slotIndex;
+      }
+      applySlotColorToFace(f, rgb01);
+      slotFaces += 1;
+    }
+    logPaintToConsole('перекраска_слота', {
+      slotIndex,
+      colorHex: slotColorHex(slotIndex),
+      slotFaces,
+      scope: 'выделение',
+    });
   }
   markColorsDirty();
+  syncSelectionOverlay();
+  emitStats();
+}
+
+function undoLastAction() {
+  if (!viewer) return;
+  const popResult = popUndoSnapshot({ history: undoHistory });
+  undoHistory = popResult.nextHistory;
+  if (!popResult.snapshot) {
+    emitStats();
+    return;
+  }
+  viewer.faceSlotByFaceIndex = new Uint8Array(popResult.snapshot);
+  viewer.nonZeroFaceCount = viewer.faceSlotByFaceIndex.reduce(
+    (count: number, slot: number) => (slot !== 0 ? count + 1 : count),
+    0,
+  );
+  clearSelectionOnly();
+  refreshVertexColorsFromSlots();
 }
 
 function vertexPosToKeyFromArray(posArray: Float32Array, vIndex: number): string {
@@ -480,7 +606,54 @@ function processSelection(clientX: number, clientY: number, withMulti: boolean, 
       forceSurface,
     });
 
-    if (!withMulti && selectedFaceIndices.value.size > 0) {
+    const selectionFlow = resolveSelectionFlow({
+      isPickedAlreadySelected: selectedSelectionIds.value.has(pickedId),
+      hasAnySelection: selectedFaceIndices.value.size > 0,
+      withMulti,
+    });
+
+    if (selectionFlow.action === 'remove') {
+      removeSelection(pickedId, pickedFaces);
+      logPaintToConsole('снятие_выделения', {
+        polygonId,
+        triangles: pickedFaces.length,
+      });
+      logSelectionDebug('processSelection:removed-selection', {
+        pickedId,
+        removedFacesCount: pickedFaces.length,
+      });
+      logSelectionDebugFlat('processSelection:removed-selection', {
+        pickedId,
+        removedFacesCount: pickedFaces.length,
+      });
+      syncSelectionOverlay();
+      if (!selectedFaceIndices.value.size) {
+        lastPicked.value = null;
+        emit('surface-click', null);
+      } else {
+        const payloadOff = { id: pickedId, index: pickedIndex, type: pickedType };
+        lastPicked.value = payloadOff;
+        emit('surface-click', payloadOff);
+      }
+      emitStats();
+      logSelectionDebug('processSelection:done', {
+        payload: lastPicked.value,
+        afterSelectedSelectionIds: selectedSelectionIds.value.size,
+        afterSelectedFaceIndices: selectedFaceIndices.value.size,
+        nonZeroFaceCount: viewer.nonZeroFaceCount,
+      });
+      logSelectionDebugFlat('processSelection:done', {
+        payloadId: pickedId,
+        payloadType: pickedType,
+        payloadIndex: pickedIndex,
+        afterSelectedSelectionIds: selectedSelectionIds.value.size,
+        afterSelectedFaceIndices: selectedFaceIndices.value.size,
+        nonZeroFaceCount: viewer.nonZeroFaceCount,
+      });
+      return;
+    }
+
+    if (selectionFlow.shouldClearBeforeAdd) {
       logSelectionDebug('processSelection:clear-before-single-select', {
         prevSelectionCount: selectedSelectionIds.value.size,
         prevFaceCount: selectedFaceIndices.value.size,
@@ -492,35 +665,26 @@ function processSelection(clientX: number, clientY: number, withMulti: boolean, 
       clearSelectionOnly();
     }
 
-    if (withMulti && selectedSelectionIds.value.has(pickedId)) {
-      removeSelection(pickedId, pickedFaces);
-      for (const f of pickedFaces) repaintFace(f, false);
-      logSelectionDebug('processSelection:removed-selection', {
-        pickedId,
-        removedFacesCount: pickedFaces.length,
-      });
-      logSelectionDebugFlat('processSelection:removed-selection', {
-        pickedId,
-        removedFacesCount: pickedFaces.length,
-      });
-    } else {
-      addSelection(pickedId, pickedFaces);
-      paintFaces(pickedFaces, props.activeSlotIndex);
-      for (const f of pickedFaces) repaintFace(f, true);
-      logSelectionDebug('processSelection:added-selection', {
-        pickedId,
-        addedFacesCount: pickedFaces.length,
-        activeSlotIndex: props.activeSlotIndex,
-      });
-      logSelectionDebugFlat('processSelection:added-selection', {
-        pickedId,
-        addedFacesCount: pickedFaces.length,
-        activeSlotIndex: props.activeSlotIndex,
-      });
-    }
+    addSelection(pickedId, pickedFaces);
+    logPaintToConsole('выбор', {
+      polygonId,
+      mode: pickedType === 'surface' ? 'surface' : 'polygon',
+      slotIndex: props.activeSlotIndex,
+      colorHex: slotColorHex(props.activeSlotIndex),
+      triangles: pickedFaces.length,
+    });
+    logSelectionDebug('processSelection:added-selection', {
+      pickedId,
+      addedFacesCount: pickedFaces.length,
+      activeSlotIndex: props.activeSlotIndex,
+    });
+    logSelectionDebugFlat('processSelection:added-selection', {
+      pickedId,
+      addedFacesCount: pickedFaces.length,
+      activeSlotIndex: props.activeSlotIndex,
+    });
 
     syncSelectionOverlay();
-    markColorsDirty();
     const payload = { id: pickedId, index: pickedIndex, type: pickedType };
     lastPicked.value = payload;
     emit('surface-click', payload);
@@ -554,7 +718,7 @@ function onPointerDown(ev: PointerEvent) {
     y: ev.clientY,
     pointerId: ev.pointerId,
     shiftKey: ev.shiftKey || keyboardState.shift,
-    multiKey: ev.ctrlKey || ev.metaKey || keyboardState.ctrlOrMeta,
+    ctrlOrMetaKey: ev.ctrlKey || ev.metaKey || keyboardState.ctrlOrMeta,
   };
   if (canvas.value && canvas.value.hasPointerCapture && !canvas.value.hasPointerCapture(ev.pointerId)) {
     canvas.value.setPointerCapture(ev.pointerId);
@@ -574,7 +738,7 @@ function onPointerDown(ev: PointerEvent) {
     x: ev.clientX,
     y: ev.clientY,
     shiftDown: pointerDown.value.shiftKey,
-    multiDown: pointerDown.value.multiKey,
+    ctrlOrMetaDown: pointerDown.value.ctrlOrMetaKey,
   });
 }
 
@@ -607,7 +771,7 @@ function onPointerUp(ev: PointerEvent) {
     dy,
     threshold: pointerMoveThresholdPx,
     downShiftKey: down.shiftKey,
-    downMultiKey: down.multiKey,
+    downCtrlOrMetaKey: down.ctrlOrMetaKey,
     upShiftKey: ev.shiftKey,
     upCtrlKey: ev.ctrlKey,
     upMetaKey: ev.metaKey,
@@ -616,12 +780,17 @@ function onPointerUp(ev: PointerEvent) {
     logSelectionDebug('pointerup:ignored-drag', { dx, dy, threshold: pointerMoveThresholdPx });
     return;
   }
-  const withMulti = down.multiKey || ev.ctrlKey || ev.metaKey || keyboardState.ctrlOrMeta;
-  const forceSurface = down.shiftKey || ev.shiftKey || keyboardState.shift;
+  const { withMulti, forceSurface } = resolveSelectionModesFromPointer(
+    { shiftKey: down.shiftKey, ctrlOrMetaKey: down.ctrlOrMetaKey },
+    ev.shiftKey,
+    ev.ctrlKey,
+    ev.metaKey,
+    keyboardState,
+  );
   logSelectionDebugFlat('pointerup:mode', {
     withMulti,
     forceSurface,
-    downMulti: down.multiKey,
+    downCtrlOrMeta: down.ctrlOrMetaKey,
     upCtrlMeta: ev.ctrlKey || ev.metaKey,
     keyMulti: keyboardState.ctrlOrMeta,
     downShift: down.shiftKey,
@@ -653,24 +822,26 @@ async function initViewer() {
     import('three/examples/jsm/loaders/STLLoader.js'),
     import('three'),
   ]);
-  const { Scene, PerspectiveCamera, WebGLRenderer, AmbientLight, DirectionalLight, Box3, Vector3, Raycaster } = threeA as any;
+  const { Scene, PerspectiveCamera, WebGLRenderer, Box3, Vector3, Raycaster, ACESFilmicToneMapping } = threeA as any;
   const { STLLoader } = stlLoaderMod as any;
-  const { MeshBasicMaterial, Mesh, Float32BufferAttribute, DoubleSide } = threeB as any;
+  const {
+    MeshStandardMaterial,
+    Mesh,
+    Float32BufferAttribute,
+    DoubleSide,
+    SRGBColorSpace,
+    HemisphereLight,
+    DirectionalLight,
+  } = threeB as any;
 
   if (!canvasEl || !canvasWrap.value) return;
-  const renderer = new WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
+  const renderer = new WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setClearColor(VIEWER_CLEAR_COLOR_HEX, 1);
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = VIEWER_TONE_MAPPING_EXPOSURE;
   const scene = new Scene();
-  
-  scene.add(new AmbientLight(0xffffff, 0.4));
-  
-  const dirLight1 = new DirectionalLight(0xffffff, 0.8);
-  dirLight1.position.set(5, 10, 7.5);
-  scene.add(dirLight1);
-
-  const dirLight2 = new DirectionalLight(0xffffff, 0.5);
-  dirLight2.position.set(-5, -5, -5);
-  scene.add(dirLight2);
 
   const camera = new PerspectiveCamera(45, 1, 0.01, 1000);
   camera.position.set(0, 0.7, 2.2);
@@ -711,19 +882,24 @@ async function initViewer() {
   const vertexCount = positionAttr.count;
   const triangleCount = Math.floor(vertexCount / 3);
   const colorArray = new Float32Array(vertexCount * 3);
-  const baseRgb = hexToRgb01(slotColorHex(0));
+  const baseRgb = rgb01ForFacePaint(slotColorHex(0));
   for (let v = 0; v < vertexCount; v++) {
     const i = v * 3;
     colorArray[i + 0] = baseRgb[0];
     colorArray[i + 1] = baseRgb[1];
     colorArray[i + 2] = baseRgb[2];
   }
-  nonIndexedGeometry.setAttribute('color', new Float32BufferAttribute(colorArray, 3));
-  
-  const material = new MeshBasicMaterial({
-    vertexColors: true, 
+  const colorBufferAttr = new Float32BufferAttribute(colorArray, 3);
+  if ('colorSpace' in colorBufferAttr) {
+    (colorBufferAttr as { colorSpace: string }).colorSpace = SRGBColorSpace;
+  }
+  nonIndexedGeometry.setAttribute('color', colorBufferAttr);
+
+  const material = new MeshStandardMaterial({
+    vertexColors: true,
     side: DoubleSide,
-    toneMapped: false,
+    metalness: 0.06,
+    roughness: 0.42,
   });
   const mesh = new Mesh(nonIndexedGeometry, material);
   scene.add(mesh);
@@ -742,6 +918,18 @@ async function initViewer() {
   camera.updateProjectionMatrix();
   controls.target.set(0, 0, 0);
   controls.update();
+
+  const hemi = new HemisphereLight(0xdce6f2, 0x1e293b, 0.72);
+  scene.add(hemi);
+  const keyLight = new DirectionalLight(0xffffff, 1.35);
+  keyLight.position.set(maxDim * 1.5, maxDim * 2.4, maxDim * 1.1);
+  scene.add(keyLight);
+  const fillLight = new DirectionalLight(0xb4c5dc, 0.48);
+  fillLight.position.set(-maxDim * 1.9, maxDim * 0.45, -maxDim * 0.7);
+  scene.add(fillLight);
+  const rimLight = new DirectionalLight(0xe2e8f0, 0.35);
+  rimLight.position.set(0, -maxDim * 0.8, maxDim * 2.2);
+  scene.add(rimLight);
 
   const resize = () => {
     const parent = canvasWrap.value;
@@ -864,6 +1052,7 @@ async function initViewer() {
     polygonCursor += 1;
   }
 
+  const colorAttrLive = nonIndexedGeometry.attributes.color as THREE.BufferAttribute;
   viewer = {
     renderer,
     scene,
@@ -872,8 +1061,8 @@ async function initViewer() {
     raycaster: new Raycaster(),
     mesh,
     geometry: nonIndexedGeometry,
-    colorAttr: nonIndexedGeometry.attributes.color,
-    colorArray,
+    colorAttr: colorAttrLive,
+    colorArray: colorAttrLive.array as Float32Array,
     positionArray: posArray,
     vertexCount,
     triangleCount,
@@ -885,8 +1074,10 @@ async function initViewer() {
     polygonFacesMap,
     selectionOverlayMesh: null,
   };
+  undoHistory = [];
   markColorsDirty();
   emitStats();
+  logPreviewStep('Предпросмотр: модель загружена');
 
   cleanup = () => {
     cancelAnimationFrame(raf);
@@ -900,6 +1091,7 @@ async function initViewer() {
     nonIndexedGeometry.dispose?.();
     material.dispose?.();
     viewer = null;
+    undoHistory = [];
   };
 }
 
@@ -941,16 +1133,6 @@ watch(
   { immediate: true },
 );
 
-watch(
-  () => props.slotColors,
-  () => {
-    if (!viewer) return;
-    for (let i = 0; i < 4; i++) recolorSlot(i);
-    viewer.colorAttr.needsUpdate = true;
-  },
-  { deep: true },
-);
-
 onBeforeUnmount(() => {
   if (cleanup) cleanup();
 });
@@ -961,6 +1143,8 @@ onBeforeUnmount(() => {
   paintAllToSlot,
   resetToSlot0,
   recolorSlot,
+  undoLastAction,
+  refreshVertexColorsFromSlots,
   exportEditedStl,
   getSurfaceIdsGroupedBySlot,
 });

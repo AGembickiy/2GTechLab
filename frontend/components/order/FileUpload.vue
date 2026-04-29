@@ -2,6 +2,12 @@
 import { useOrderForm } from '~/composables/useOrderForm';
 import type { MaterialPresetDto } from '~/composables/usePrintApi';
 import type { ThreeViewerSurfaceClickPayload } from '~/types/three-viewer';
+import {
+  buildEditedGlbName,
+  buildEditedStlName,
+  getExtension,
+  is3dLikeExtension,
+} from '~/utils/fileUploadModelRules';
 
 type MaterialType = 'pla' | 'petg' | 'abs' | '';
 type ColorType = 'white' | 'black' | 'gray' | 'red' | 'blue' | 'green' | 'custom' | '';
@@ -73,6 +79,8 @@ const threeViewerRef = ref<{
   paintAllToSlot: (slotIndex: number) => void;
   resetToSlot0: () => void;
   recolorSlot: (slotIndex: number) => void;
+  undoLastAction: () => void;
+  refreshVertexColorsFromSlots: () => void;
   exportEditedStl: (options?: {
     scalePercent?: number;
     rotateXDeg?: number;
@@ -92,13 +100,9 @@ const DEFAULT_COLOR_HEX = '#7dd3fc';
 const runtimeConfig = useRuntimeConfig();
 const apiBase = computed(() => (runtimeConfig.public.apiBase as string).replace(/\/$/, ''));
 
-function logUploadStage(stage: string, details?: Record<string, unknown>) {
+function logUploadStage(message: string) {
   if (!import.meta.client) return;
-  if (details) {
-    console.info(`[FileUpload] ${stage}`, details);
-    return;
-  }
-  console.info(`[FileUpload] ${stage}`);
+  console.info(message);
 }
 
 const fallbackPresets: MaterialPresetDto[] = [
@@ -129,6 +133,7 @@ const materials = computed(() => {
 const selectionCount = ref(0);
 const totalFaces = ref(0);
 const lastPicked = ref<ThreeViewerSurfaceClickPayload>(null);
+const canUndoLastAction = ref(false);
 
 function materialLabel(type: MaterialType): string {
   switch (type) {
@@ -199,7 +204,7 @@ const visibleAmsSlotsCount = computed(() => {
 const visibleAmsSlots = computed(() => form.amsSlots.slice(0, visibleAmsSlotsCount.value));
 const canAddAmsSlot = computed(() => visibleAmsSlotsCount.value < maxAmsSlots);
 
-function onSlotMaterialChange(slotIndex: number) {
+async function onSlotMaterialChange(slotIndex: number) {
   const slot = form.amsSlots?.[slotIndex];
   if (!slot) return;
   const nextColors = colorsForType(slot.material);
@@ -208,22 +213,18 @@ function onSlotMaterialChange(slotIndex: number) {
   } else if (!slot.color || !nextColors.includes(slot.color as Exclude<ColorType, ''>)) {
     slot.color = nextColors[0];
   }
+  await nextTick();
   threeViewerRef.value?.recolorSlot(slotIndex);
-  if (slotIndex === activeSlotIndex.value && selectionCount.value > 0) {
-    threeViewerRef.value?.assignSelectionToActiveSlot();
-    isStlEdited.value = true;
-  }
+  if (selectionCount.value > 0) isStlEdited.value = true;
 }
 
-function setSlotColor(slotIndex: number, color: Exclude<ColorType, ''>) {
+async function setSlotColor(slotIndex: number, color: Exclude<ColorType, ''>) {
   const slot = form.amsSlots?.[slotIndex];
   if (!slot || !slot.material) return;
   slot.color = color;
+  await nextTick();
   threeViewerRef.value?.recolorSlot(slotIndex);
-  if (slotIndex === activeSlotIndex.value && selectionCount.value > 0) {
-    threeViewerRef.value?.assignSelectionToActiveSlot();
-    isStlEdited.value = true;
-  }
+  if (selectionCount.value > 0) isStlEdited.value = true;
 }
 
 function addMaterialSlot() {
@@ -240,7 +241,6 @@ function addMaterialSlot() {
     slot.color = nextColors[0] ?? '';
   }
   activeSlotIndex.value = nextIndex;
-  threeViewerRef.value?.recolorSlot(nextIndex);
 }
 
 const canUseActiveSlot = computed(() => {
@@ -270,7 +270,7 @@ watch(
   presetsError,
   (err) => {
     if (!err) return;
-    logUploadStage('materials:fetch-error', { message: err.message });
+    logUploadStage(`Ошибка загрузки материалов: ${err.message}`);
   },
   { immediate: true },
 );
@@ -306,8 +306,13 @@ watch(
       const colors = colorsForType(slot0.material);
       slot0.color = colors[0] ?? 'white';
     }
+    if (import.meta.client && isPreviewOpen.value && previewKind.value === 'glb') {
+      nextTick(() => {
+        threeViewerRef.value?.refreshVertexColorsFromSlots?.();
+      });
+    }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 const baseColClasses = computed(() => ({
@@ -324,24 +329,9 @@ const baseColClasses = computed(() => ({
   'lg:max-w-[50%]': true,
 }));
 
-function resetPaintToSlot0() {
-  // Return AMS UI to a single base slot so reset is visible in UI as well.
-  const baseMaterial = slotMaterials.value[0] ?? '';
-  const baseColor = colorsForType(baseMaterial)[0] ?? '';
-  for (let i = 0; i < form.amsSlots.length; i++) {
-    if (i === 0) {
-      form.amsSlots[i].material = baseMaterial;
-      form.amsSlots[i].color = baseColor;
-    } else {
-      form.amsSlots[i].material = '';
-      form.amsSlots[i].color = '';
-    }
-  }
-  requestedAmsSlotsCount.value = 1;
-  activeSlotIndex.value = 0;
-  threeViewerRef.value?.resetToSlot0();
-  paintedFacesCount.value = 0;
-  form.printType = 'single';
+function undoLastViewerAction() {
+  if (!canUndoLastAction.value) return;
+  threeViewerRef.value?.undoLastAction?.();
   isStlEdited.value = true;
 }
 
@@ -357,10 +347,11 @@ function clearSelectionOnly() {
   emit('surface-click', null);
 }
 
-function onViewerStatsChange(payload: { selectedCount: number; paintedFaces: number; totalFaces: number }) {
+function onViewerStatsChange(payload: { selectedCount: number; paintedFaces: number; totalFaces: number; undoAvailable: boolean }) {
   selectionCount.value = payload.selectedCount;
   paintedFacesCount.value = payload.paintedFaces;
   totalFaces.value = payload.totalFaces;
+  canUndoLastAction.value = payload.undoAvailable;
   form.printType = payload.paintedFaces > 0 ? 'multi' : 'single';
 }
 
@@ -393,39 +384,15 @@ onBeforeUnmount(() => {
   document.body.classList.remove('modal-open');
 });
 
-function getExtension(name: string): string {
-  const parts = name.split('.');
-  return (parts.length > 1 ? (parts.at(-1) ?? '') : '').toLowerCase();
-}
-
 function isImage(file: File): boolean {
   return file.type.startsWith('image/');
 }
 
-function is3dLikeExtension(ext: string): boolean {
-  return [
-    'stl',
-    'obj',
-    'gltf',
-    'glb',
-    'fbx',
-    'dae',
-    'blend',
-    'skp',
-    'igs',
-    'iges',
-    'step',
-    'stp',
-    'wrl',
-    'vrml',
-  ].includes(ext);
-}
-
 async function convert3dToGlbIfPossible(file: File): Promise<File> {
   const ext = getExtension(file.name);
-  logUploadStage('convert:start', { name: file.name, ext });
+  logUploadStage('Конвертация в GLB: начало');
   if (ext === 'glb') {
-    logUploadStage('convert:skip', { reason: 'already-glb', name: file.name });
+    logUploadStage('Конвертация в GLB: файл уже GLB, пропуск');
     return file;
   }
 
@@ -443,19 +410,14 @@ async function convert3dToGlbIfPossible(file: File): Promise<File> {
 
   const blob = new Blob([glbArrayBuffer], { type: 'model/gltf-binary' });
   const converted = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.glb', { type: 'model/gltf-binary' });
-  logUploadStage('convert:success', { source: file.name, result: converted.name });
+  logUploadStage('Конвертация в GLB: готово');
   return converted;
 }
 
 async function onChange(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0] ?? null;
-  logUploadStage('file:selected', {
-    hasFile: Boolean(file),
-    name: file?.name,
-    size: file?.size,
-    type: file?.type,
-  });
+  logUploadStage(file ? `Выбран файл: ${file.name}` : 'Файл не выбран');
   await handleSelectedFile(file);
 }
 
@@ -511,21 +473,10 @@ function waitForPreviewClose(): Promise<void> {
   });
 }
 
-function buildEditedStlName(sourceName: string): string {
-  const baseName = sourceName.replace(/\.[^/.]+$/, '');
-  if (baseName.endsWith('-edited')) return `${baseName}.stl`;
-  return `${baseName}-edited.stl`;
-}
-
-function buildEditedGlbName(sourceName: string): string {
-  const baseName = sourceName.replace(/\.[^/.]+$/, '');
-  if (baseName.endsWith('-edited')) return `${baseName}.glb`;
-  return `${baseName}-edited.glb`;
-}
 
 async function saveEditedStlAndUseInOrder() {
   if (!modelValue.value || !threeViewerRef.value) return;
-  logUploadStage('save-edited:start', { source: modelValue.value.name });
+  logUploadStage('Сохранение правок модели: начало');
   isSavingEditedStl.value = true;
   errorMessage.value = null;
   try {
@@ -548,17 +499,17 @@ async function saveEditedStlAndUseInOrder() {
     previewUrl.value = URL.createObjectURL(normalizedGlbFile);
     previewKind.value = 'glb';
     isStlEdited.value = false;
-    logUploadStage('save-edited:success', { result: normalizedGlbFile.name });
+    logUploadStage('Сохранение правок модели: готово');
   } catch (e) {
     errorMessage.value = e instanceof Error ? e.message : 'Не удалось сохранить изменённый STL.';
-    logUploadStage('save-edited:error', { message: errorMessage.value });
+    logUploadStage(`Сохранение правок модели: ошибка — ${errorMessage.value ?? ''}`);
   } finally {
     isSavingEditedStl.value = false;
   }
 }
 
 async function handleSelectedFile(file: File | null) {
-  logUploadStage('pipeline:start');
+  logUploadStage('Обработка файла: старт');
   resetPreview();
   originalFile.value = file;
   modelValue.value = null;
@@ -567,23 +518,23 @@ async function handleSelectedFile(file: File | null) {
   isBusy.value = true;
   try {
     if (isImage(file)) {
-      logUploadStage('detected:image', { name: file.name });
+      logUploadStage('Определён тип: изображение');
       modelValue.value = file;
       previewKind.value = 'image';
       previewUrl.value = URL.createObjectURL(file);
       isPreviewOpen.value = true;
-      logUploadStage('preview:open', { kind: 'image', name: file.name });
+      logUploadStage('Открыт предпросмотр изображения');
       await waitForPreviewClose();
       return;
     }
 
     const ext = getExtension(file.name);
-    logUploadStage('detected:extension', { ext, name: file.name });
+    logUploadStage(`Определено расширение: .${ext}`);
     if (!is3dLikeExtension(ext)) {
       modelValue.value = file;
       errorMessage.value = 'Файл загружен, но формат не распознан как 3D или изображение.';
       isPreviewOpen.value = true;
-      logUploadStage('unsupported-format', { ext, name: file.name });
+      logUploadStage('Неподдерживаемый формат для предпросмотра');
       await waitForPreviewClose();
       return;
     }
@@ -597,17 +548,17 @@ async function handleSelectedFile(file: File | null) {
       previewModelFormat.value = 'glb';
     }
     isPreviewOpen.value = true;
-    logUploadStage('preview:open', { kind: previewKind.value, name: working.name });
+    logUploadStage('Открыт предпросмотр 3D (GLB)');
     await waitForPreviewClose();
   } catch (e) {
     modelValue.value = file;
     errorMessage.value = e instanceof Error ? e.message : 'Не удалось обработать файл.';
     isPreviewOpen.value = true;
-    logUploadStage('pipeline:error', { message: errorMessage.value, name: file.name });
+    logUploadStage(`Ошибка обработки файла: ${errorMessage.value ?? ''}`);
     await waitForPreviewClose();
   } finally {
     isBusy.value = false;
-    logUploadStage('pipeline:done');
+    logUploadStage('Обработка файла: завершено');
   }
 }
 
@@ -619,7 +570,7 @@ async function handleSelectedFile(file: File | null) {
       <div>
         <div class="text-sm font-semibold">Файл модели</div>
         <div class="mt-1 text-xs text-slate-400">
-          OBJ, FBX, STL, DAE, GLTF, BLEND, SKP, IGES, STEP, VRML и др. • до 100 МБ
+          3MF, OBJ, FBX, STL, DAE, GLTF, BLEND, SKP, IGES, STEP, VRML и др. • до 100 МБ
         </div>
       </div>
       <button
@@ -738,10 +689,11 @@ async function handleSelectedFile(file: File | null) {
                       </button>
                       <button
                         type="button"
-                        class="rounded-lg border border-slate-700/70 bg-slate-950/20 px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-950/30"
-                        @click="resetPaintToSlot0"
+                        :disabled="!canUndoLastAction"
+                        class="rounded-lg border border-slate-700/70 bg-slate-950/20 px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-950/30 disabled:opacity-50"
+                        @click="undoLastViewerAction"
                       >
-                        Сброс
+                        Отменить
                       </button>
                     </div>
                   </div>
@@ -804,7 +756,7 @@ async function handleSelectedFile(file: File | null) {
               <!-- Нижняя панель: всегда видна внизу правой колонки -->
               <div class="shrink-0 rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
                 <div class="mb-2 text-[10px] leading-tight text-slate-400">
-                  Клик: полигон • Shift+клик: поверхность • Ctrl/Cmd: мультивыбор
+                  Клик: полигон • повторный клик по выделенному — снять • Shift+клик: мультивыбор • Ctrl/Cmd: поверхность
                 </div>
                 <div class="flex flex-col gap-2">
                   <button
