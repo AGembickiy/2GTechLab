@@ -89,6 +89,19 @@
               </UButton>
             </div>
 
+            <div class="pt-4 border-t border-white/5">
+              <UButton
+                block
+                color="gray"
+                size="md"
+                variant="outline"
+                class="rounded-xl"
+                @click="resetToBaseState"
+              >
+                Сбросить
+              </UButton>
+            </div>
+
             <div class="pt-4 border-t border-white/5 space-y-4">
               <UButton 
                 class="w-full justify-center rounded-xl py-3" 
@@ -150,6 +163,9 @@ const slots = reactive<SlotRow[]>([
   { index: 3, materialId: null, material: null },
   { index: 4, materialId: null, material: null },
 ]);
+
+// Сохраняем базовые цвета слотов для сброса
+const baseSlotColors = ref<string[]>(['#7dd3fc', '#7dd3fc', '#7dd3fc', '#7dd3fc']);
 const maxSlots = 4;
 
 const calculationResult = ref<PrintJobResultDto | null>(null);
@@ -164,6 +180,23 @@ let currentJobId: number | null = null;
 const viewerRef = ref<ComponentPublicInstance | null>(null);
 
 const slotColors = computed(() => slots.map((s) => (s.material?.color_hex ? s.material.color_hex : '#475569')));
+
+// Функция сброса к базовому состоянию
+function resetToBaseState() {
+  // Сбрасываем цвета слотов к базовым значениям
+  baseSlotColors.value = ['#7dd3fc', '#7dd3fc', '#7dd3fc', '#7dd3fc'];
+  
+  // Сбрасываем выбранные материалы в слотах
+  slots.forEach(slot => {
+    slot.materialId = null;
+    slot.material = null;
+  });
+  
+  // Уведомляем viewer о необходимости сброса
+  nextTick(() => {
+    (viewerRef.value as { resetToBaseState?: () => void } | null)?.resetToBaseState?.();
+  });
+}
 
 const calcHint = computed(() => {
   if (!showModal.value) return '';

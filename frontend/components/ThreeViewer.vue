@@ -84,6 +84,7 @@ const emit = defineEmits<{
   (e: 'surface-click', payload: { id: string; index: number; type: string } | null): void;
   (e: 'error', message: string): void;
   (e: 'material-select', materialId: number): void;
+  (e: 'reset-to-base'): void;
 }>();
 
 const DEFAULT_COLOR_HEX = '#7dd3fc';
@@ -95,6 +96,17 @@ const MAX_UNDO_HISTORY = 50;
 
 let viewer: any = null;
 let undoHistory: Uint8Array[] = [];
+
+// Хранилище базовых и текущих параметров для каждой грани
+interface FaceState {
+  baseColor: string;
+  currentColor: string;
+  baseMaterial: number | null;
+  currentMaterial: number | null;
+}
+
+// Массив состояний для всех граней
+let faceStates: FaceState[] = [];
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 const canvasWrap = ref<HTMLElement | null>(null);
@@ -357,14 +369,22 @@ function paintFaces(faceIndices: number[], slotIndex: number) {
     current: viewer.faceSlotByFaceIndex,
     maxEntries: MAX_UNDO_HISTORY,
   });
+  
+  const rgb01 = rgb01ForFacePaint(slotColorHex(slotIndex));
+  
   for (const faceIndex of faceIndices) {
     if (faceIndex < 0 || faceIndex >= viewer.triangleCount) continue;
+    
+    // Обновляем состояние грани
+    faceStates[faceIndex].currentColor = slotColorHex(slotIndex);
+    faceStates[faceIndex].currentMaterial = slotIndex;
+    
     const prevSlot = viewer.faceSlotByFaceIndex[faceIndex];
     if (prevSlot === slotIndex) continue;
     if (prevSlot === 0 && slotIndex !== 0) viewer.nonZeroFaceCount += 1;
     if (prevSlot !== 0 && slotIndex === 0) viewer.nonZeroFaceCount -= 1;
     viewer.faceSlotByFaceIndex[faceIndex] = slotIndex;
-    applySlotColorToFace(faceIndex, rgb01ForFacePaint(slotColorHex(slotIndex)));
+    applySlotColorToFace(faceIndex, rgb01);
   }
   markColorsDirty();
   emitStats();
@@ -425,6 +445,19 @@ function paintAllToSlot(slotIndex: number) {
     }
   }
   if (!hasChanges) return;
+  
+  // Обновляем базовые параметры для всех граней
+  for (let i = 0; i < faceStates.length; i++) {
+    faceStates[i].baseColor = slotColorHex(slotIndex);
+    faceStates[i].baseMaterial = slotIndex;
+    // Текущие параметры обновляем только для неизмененных элементов
+    if (faceStates[i].currentColor === faceStates[i].baseColor && 
+        faceStates[i].currentMaterial === faceStates[i].baseMaterial) {
+      faceStates[i].currentColor = slotColorHex(slotIndex);
+      faceStates[i].currentMaterial = slotIndex;
+    }
+  }
+  
   undoHistory = pushUndoSnapshot({
     history: undoHistory,
     current: viewer.faceSlotByFaceIndex,
@@ -447,6 +480,43 @@ function paintAllToSlot(slotIndex: number) {
 function resetToSlot0() {
   clearSelectionOnly();
   paintAllToSlot(0);
+}
+
+/**
+ * Сброс состояния модели к базовому
+ */
+function resetToBaseState() {
+  if (!viewer) return;
+  
+  // Сбрасываем состояние всех граней к базовому
+  for (let i = 0; i < faceStates.length; i++) {
+    faceStates[i].currentColor = faceStates[i].baseColor;
+    faceStates[i].currentMaterial = faceStates[i].baseMaterial;
+  }
+  
+  // Сбрасываем слоты на базовые значения
+  for (let f = 0; f < viewer.triangleCount; f++) {
+    viewer.faceSlotByFaceIndex[f] = faceStates[f].baseMaterial || 0;
+  }
+  
+  // Обновляем статистику
+  viewer.nonZeroFaceCount = viewer.faceSlotByFaceIndex.reduce(
+    (count: number, slot: number) => (slot !== 0 ? count + 1 : count),
+    0
+  );
+  
+  // Обновляем цвета
+  for (let f = 0; f < viewer.triangleCount; f++) {
+    const baseColor = faceStates[f].baseColor;
+    const rgb01 = rgb01ForFacePaint(baseColor);
+    applySlotColorToFace(f, rgb01);
+  }
+  
+  markColorsDirty();
+  emitStats();
+  
+  // Уведомляем родительский компонент
+  emit('reset-to-base');
 }
 
 /** Слоты вьювера 0..3 → списки id вида `polygon_<id>` для API (`slot_index` 1..4). */
@@ -474,20 +544,81 @@ function recolorSlot(slotIndex: number) {
   const recolorScope = resolveRecolorScope({
     selectedFacesCount: selectedFaceIndices.value.size,
   });
+  
+  // При отсутствии выделения применяем глобальное изменение только к неизмененным элементам
   if (recolorScope === 'none') {
-    logPreviewStep('Предпросмотр: нет выделения — цвет не применён');
+    const rgb01 = rgb01ForFacePaint(slotColorHex(slotIndex));
+    let hasChanges = false;
+    
+    // Ищем элементы, которые не были изменены (их текущие параметры совпадают с базовыми)
+    for (let i = 0; i < faceStates.length; i++) {
+      if (faceStates[i].currentColor === faceStates[i].baseColor && 
+          faceStates[i].currentMaterial === faceStates[i].baseMaterial) {
+        
+        // Обновляем только базовые параметры, не затрагивая измененные элементы
+        faceStates[i].baseColor = slotColorHex(slotIndex);
+        faceStates[i].baseMaterial = slotIndex;
+        
+        // Поскольку это неизмененный элемент, его текущие параметры тоже обновляем
+        faceStates[i].currentColor = slotColorHex(slotIndex);
+        faceStates[i].currentMaterial = slotIndex;
+        
+        hasChanges = true;
+      }
+    }
+    
+    if (!hasChanges) return;
+    
+    // Применяем изменения только к неизмененным элементам
+    undoHistory = pushUndoSnapshot({
+      history: undoHistory,
+      current: viewer.faceSlotByFaceIndex,
+      maxEntries: MAX_UNDO_HISTORY,
+    });
+    
+    // Обновляем слоты и цвета только для неизмененных элементов
+    for (let f = 0; f < viewer.triangleCount; f++) {
+      if (faceStates[f].currentColor === faceStates[f].baseColor && 
+          faceStates[f].currentMaterial === faceStates[f].baseMaterial) {
+        
+        // Обновляем слот
+        viewer.faceSlotByFaceIndex[f] = slotIndex;
+        
+        // Обновляем цвет
+        applySlotColorToFace(f, rgb01);
+      }
+    }
+    
+    // Обновляем статистику
+    viewer.nonZeroFaceCount = viewer.faceSlotByFaceIndex.reduce(
+      (count: number, slot: number) => (slot !== 0 ? count + 1 : count),
+      0
+    );
+    
+    markColorsDirty();
+    emitStats();
+    logPreviewStep(`Предпросмотр: частичное глобальное изменение цвета на слот ${slotIndex + 1} применено к неизмененным элементам`);
     return;
   }
+  
+  // При наличии выделения - изменяем только выделенные грани
   const rgb01 = rgb01ForFacePaint(slotColorHex(slotIndex));
   let slotFaces = 0;
+  
   if (recolorScope === 'selection') {
     undoHistory = pushUndoSnapshot({
       history: undoHistory,
       current: viewer.faceSlotByFaceIndex,
       maxEntries: MAX_UNDO_HISTORY,
     });
+    
     for (const f of selectedFaceIndices.value) {
       if (f < 0 || f >= viewer.triangleCount) continue;
+      
+      // Обновляем состояние конкретной грани
+      faceStates[f].currentColor = slotColorHex(slotIndex);
+      faceStates[f].currentMaterial = slotIndex;
+      
       const prevSlot = viewer.faceSlotByFaceIndex[f];
       if (prevSlot !== slotIndex) {
         if (prevSlot === 0 && slotIndex !== 0) viewer.nonZeroFaceCount += 1;
@@ -497,6 +628,7 @@ function recolorSlot(slotIndex: number) {
       applySlotColorToFace(f, rgb01);
       slotFaces += 1;
     }
+    
     logPaintToConsole('перекраска_слота', {
       slotIndex,
       colorHex: slotColorHex(slotIndex),
@@ -1053,6 +1185,15 @@ async function initViewer() {
   }
 
   const colorAttrLive = nonIndexedGeometry.attributes.color as THREE.BufferAttribute;
+  
+  // Инициализация состояний для каждой грани
+  faceStates = Array(triangleCount).fill(null).map(() => ({
+    baseColor: slotColorHex(0),
+    currentColor: slotColorHex(0),
+    baseMaterial: null,
+    currentMaterial: null
+  }));
+  
   viewer = {
     renderer,
     scene,
@@ -1142,6 +1283,7 @@ onBeforeUnmount(() => {
   assignSelectionToActiveSlot,
   paintAllToSlot,
   resetToSlot0,
+  resetToBaseState,
   recolorSlot,
   undoLastAction,
   refreshVertexColorsFromSlots,
