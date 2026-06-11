@@ -7,3 +7,12 @@ python-dotenv
 trimesh
 pymeshfix
 numpy
+psycopg[binary]
+drf-spectacular
+gunicorn
+
+# Для универсальной конвертации 3D-моделей (FBX, OBJ, DAE, GLTF и т.д.)
+# Установите Blender CLI и добавьте в PATH
+# Ubuntu/Debian: apt-get install blender
+# macOS: brew install blender
+# Windows: Скачайте с blender.org и добавьте папку bin в PATH

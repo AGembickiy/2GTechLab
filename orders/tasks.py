@@ -69,7 +69,8 @@ def process_order_task(order_id):
         
         # 0. Конвертация в GLB если нужно
         ext = order.file.name.split('.')[-1].lower()
-        if ext in ['obj', 'fbx', 'stl', 'dae', 'gltf', 'blend', 'skp', 'iges', 'step', 'vrml']:
+        # Поддерживаемые форматы для конвертации в GLB
+        if ext in ['obj', 'fbx', 'stl', 'dae', 'gltf', 'blend', 'skp', 'iges', 'step', 'vrml', 'ply', 'glb', '3mf', 'x', 'usd', 'usda', 'usdc']:
             new_path = convert_to_glb(order.file.path)
             if new_path.endswith('.glb'):
                 with open(new_path, 'rb') as f:

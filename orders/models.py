@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.contrib.auth.models import User
 
 class Material(models.Model):
     CATEGORY_CHOICES = [
@@ -65,6 +66,7 @@ class Order(models.Model):
     final_price = models.DecimalField("Финальная цена", max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Связи
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='orders')
     material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True)
     printer = models.ForeignKey(Printer, on_delete=models.SET_NULL, null=True)
 

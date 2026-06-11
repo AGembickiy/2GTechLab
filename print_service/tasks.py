@@ -1,5 +1,6 @@
 from celery import shared_task
 from django.core.exceptions import ObjectDoesNotExist
+from pathlib import Path
 from print_service.models import PrintJob
 import trimesh
 import subprocess
@@ -24,6 +25,23 @@ def process_order(order_id):
         # Конвертация в 3MF
         # Используем оригинальный файл или конвертированный STL
         input_path = order.converted_stl.path if order.converted_stl else order.original_file.path
+        
+        # Проверка формата - если это не STL, конвертируем через trimesh
+        ext = Path(order.original_file.name).suffix.lower()
+        if ext not in ['.stl']:
+            # Конвертируем через trimesh
+            try:
+                import trimesh
+                mesh = trimesh.load(input_path)
+                # Экспорт в STL для слайсера
+                stl_path = input_path.rsplit('.', 1)[0] + '.stl'
+                mesh.export(stl_path, file_type='stl')
+                input_path = stl_path
+            except Exception as e:
+                order.status = 'error'
+                order.last_error = f"Ошибка конвертации в STL: {e}"
+                order.save()
+                return {'status': 'error', 'error': str(e)}
         
         # Создаем директорию для временных файлов
         tmp_dir = os.path.join(settings.MEDIA_ROOT, 'tmp')

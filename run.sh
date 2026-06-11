@@ -1,116 +1,84 @@
 #!/usr/bin/env bash
-set -u
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+set -e
 
-DJANGO_PID=""
-NUXT_PID=""
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-log_info() {
-  echo -e "${BLUE}$1${NC}"
-}
+echo "================================="
+echo "  2GTechLab Startup Script"
+echo "================================="
 
-log_ok() {
-  echo -e "${GREEN}$1${NC}"
-}
+cd "$ROOT_DIR"
 
-log_warn() {
-  echo -e "${YELLOW}$1${NC}"
-}
+if [ ! -d "venv" ]; then
+    echo "ERROR: venv not found"
+    echo "Create virtual environment first:"
+    echo "python3 -m venv venv"
+    exit 1
+fi
 
-log_err() {
-  echo -e "${RED}$1${NC}"
-}
+source venv/bin/activate
 
-safe_kill() {
-  local pid="${1:-}"
-  if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
-    kill "${pid}" 2>/dev/null || true
-    wait "${pid}" 2>/dev/null || true
-  fi
-}
+echo ""
+echo "[1/7] Updating pip..."
+python -m pip install --upgrade pip
+
+echo ""
+echo "[2/7] Installing Python dependencies..."
+pip install -r requirements.txt
+
+echo ""
+echo "[3/7] Running Django checks..."
+python manage.py check
+
+echo ""
+echo "[4/7] Running migrations..."
+python manage.py migrate
+
+echo ""
+echo "[5/7] Collecting static files..."
+python manage.py collectstatic --noinput
+
+echo ""
+echo "[6/7] Starting Django..."
+
+python manage.py runserver 0.0.0.0:8000 &
+DJANGO_PID=$!
+
+echo "Django PID: $DJANGO_PID"
+
+cd frontend
+
+if [ ! -d "node_modules" ]; then
+    echo ""
+    echo "Installing frontend dependencies..."
+    npm install
+fi
+
+echo ""
+echo "[7/7] Starting Nuxt..."
+
+npm run dev &
+NUXT_PID=$!
+
+echo "Nuxt PID: $NUXT_PID"
 
 cleanup() {
-  log_info "Остановка сервисов..."
-  safe_kill "${DJANGO_PID}"
-  safe_kill "${NUXT_PID}"
+    echo ""
+    echo "Stopping services..."
+
+    kill $DJANGO_PID 2>/dev/null || true
+    kill $NUXT_PID 2>/dev/null || true
+
+    exit 0
 }
 
-on_interrupt() {
-  cleanup
-  exit 0
-}
+trap cleanup SIGINT SIGTERM
 
-trap on_interrupt INT TERM
-trap cleanup EXIT
+echo ""
+echo "================================="
+echo "Backend : http://localhost:8000"
+echo "Frontend: http://localhost:3000"
+echo "================================="
 
-log_info "Запуск 2GTechLab..."
-
-if [ ! -f "manage.py" ]; then
-  log_err "Скрипт нужно запускать из корня проекта (рядом с manage.py)."
-  exit 1
-fi
-
-if [ ! -d "frontend" ]; then
-  log_err "Не найдена директория frontend."
-  exit 1
-fi
-
-log_info "Шаг 1: Python окружение и зависимости"
-if [ -d "venv" ]; then
-  # shellcheck disable=SC1091
-  source "venv/bin/activate"
-  log_ok "venv активирован."
-else
-  log_info "Создание venv..."
-  python3 -m venv "venv"
-  # shellcheck disable=SC1091
-  source "venv/bin/activate"
-  log_ok "venv создан и активирован."
-fi
-
-pip install -r "requirements.txt" || {
-  log_err "Не удалось установить Python-зависимости."
-  exit 1
-}
-
-log_info "Шаг 2: Миграции"
-python3 manage.py migrate || {
-  log_err "Миграции не применились."
-  exit 1
-}
-
-log_info "Шаг 3: Frontend зависимости"
-npm --prefix "frontend" install || {
-  log_err "Не удалось установить npm-зависимости."
-  exit 1
-}
-
-log_info "Шаг 4: Запуск серверов"
-python3 manage.py runserver "0.0.0.0:8000" &
-DJANGO_PID=$!
-sleep 2
-if ! kill -0 "${DJANGO_PID}" 2>/dev/null; then
-  log_err "Django не запустился. Проверьте настройки (ALLOWED_HOSTS/DEBUG/SECRET_KEY)."
-  exit 1
-fi
-log_ok "Django: http://127.0.0.1:8000"
-
-npm --prefix "frontend" run dev -- -o &
-NUXT_PID=$!
-sleep 2
-if ! kill -0 "${NUXT_PID}" 2>/dev/null; then
-  log_err "Nuxt не запустился."
-  exit 1
-fi
-log_ok "Nuxt: http://localhost:3000"
-
-log_warn "Нажмите Ctrl+C для остановки обоих сервисов."
-
-wait -n "${DJANGO_PID}" "${NUXT_PID}"
-log_warn "Один из сервисов завершился. Останавливаю остальные."
-exit 1
+wait

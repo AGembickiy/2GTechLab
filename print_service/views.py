@@ -1,6 +1,8 @@
 from decimal import Decimal
 import os
 import tempfile
+import traceback
+import logging
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -20,16 +22,21 @@ from .serializers import (
     SlotBulkAssignSerializer,
     SurfaceSerializer,
 )
-from .services.conversion import try_convert_to_stl
+from .services.conversion import try_convert_to_stl, _check_blender_available
 from .tasks.slicing import process_3d_model
 
 # Инициализация Celery приложения
 from celery import Celery
 
+logger = logging.getLogger(__name__)
+
 celery_app = Celery('print_service')
 celery_app.config_from_object('django.conf:settings', namespace='CELERY')
 
-EXT_3D = frozenset({"stl", "obj", "fbx", "dae", "gltf", "glb", "blend", "skp", "iges", "igs", "step", "stp", "wrl", "vrml"})
+# Поддерживаемые 3D форматы
+# 3MF и VRML временно отключены из-за проблем с поддержкой в trimesh и Blender 5.x
+# STEP/IGES не поддерживаются (требуется OpenCascade)
+EXT_3D = frozenset({"stl", "obj", "fbx", "dae", "gltf", "glb", "blend", "skp", "iges", "igs", "step", "stp", "wrl", "vrml", "3mf"})
 EXT_2D = frozenset({"jpg", "jpeg", "png", "svg"})
 
 
@@ -48,12 +55,14 @@ class ConvertToGlbView(APIView):
         if ext and ext not in EXT_3D:
             return Response(
                 {"detail": f"Формат .{ext} не поддерживается для 3D-конвертации."},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             )
 
         temp_input_path = None
         try:
-            import trimesh
+            # Логирование входных данных
+            logger.info(f"ConvertToGlbView: file_name={file_obj.name}, ext={ext}")
+            logger.info(f"Blender available: {_check_blender_available()}")
 
             suffix = f".{ext}" if ext else ".stl"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_input:
@@ -61,7 +70,20 @@ class ConvertToGlbView(APIView):
                     temp_input.write(chunk)
                 temp_input_path = temp_input.name
 
-            loaded = trimesh.load(temp_input_path, force="mesh")
+            logger.info(f"Temp file created: {temp_input_path}, size={os.path.getsize(temp_input_path)}")
+
+            # Проверка, поддерживает ли trimesh этот формат
+            import trimesh
+            try:
+                loaded = trimesh.load(temp_input_path, force="mesh")
+            except Exception as e:
+                logger.error(f"Trimesh cannot load {ext} format: {e}")
+                logger.error(traceback.format_exc())
+                return Response(
+                    {"detail": f"Trimesh не поддерживает формат .{ext}. Установите Blender CLI для конвертации."},
+                    status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                )
+
             if isinstance(loaded, trimesh.Scene):
                 geoms = [g for g in loaded.geometry.values() if isinstance(g, trimesh.Trimesh)]
                 if not geoms:
@@ -82,7 +104,9 @@ class ConvertToGlbView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         except Exception as exc:
-            return Response({"detail": f"Ошибка конвертации: {exc}"}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(f"ConvertToGlbView error: {exc}")
+            logger.error(traceback.format_exc())
+            return Response({"detail": f"Ошибка конвертации: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             if temp_input_path and os.path.exists(temp_input_path):
                 try:

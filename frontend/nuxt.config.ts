@@ -26,7 +26,6 @@ export default defineNuxtConfig({
   typescript: {
     strict: true
   },
-  // Настройка прокси для API, чтобы избежать CORS ошибок
   nitro: {
     devProxy: {
       '/api/': {
@@ -35,5 +34,8 @@ export default defineNuxtConfig({
         prependPath: true
       }
     }
+  },
+  tailwindcss: {
+    configPath: '~/tailwind.config.ts'
   }
 })

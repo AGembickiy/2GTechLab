@@ -12,6 +12,10 @@ class Profile(models.Model):
         default='customer'
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Профиль'
+        verbose_name_plural = 'Профили'
 
     def __str__(self):
         return f'{self.user.username} - {self.get_role_display()}'

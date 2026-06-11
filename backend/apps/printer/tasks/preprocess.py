@@ -5,6 +5,7 @@ from celery import shared_task
 from django.conf import settings
 from ..utils.ams_calculator import calculate_material_usage
 
+
 @shared_task(bind=True, name='printer.preprocess_model')
 def preprocess_model(self, file_content: bytes, filename: str):
     """

@@ -378,6 +378,7 @@ function is3dLikeExtension(ext: string): boolean {
     'stp',
     'wrl',
     'vrml',
+    '3mf',
   ].includes(ext);
 }
 
@@ -518,7 +519,7 @@ async function handleSelectedFile(file: File | null) {
       <div>
         <div class="text-sm font-semibold">Файл модели</div>
         <div class="mt-1 text-xs text-slate-400">
-          OBJ, FBX, STL, DAE, GLTF, BLEND, SKP, IGES, STEP, VRML и др. • до 100 МБ
+          OBJ, FBX, STL, DAE, GLTF, BLEND, SKP, IGES, STEP, VRML, 3MF и др. • до 100 МБ
         </div>
       </div>
       <button
