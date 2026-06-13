@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'user_profiles.apps.UserProfilesConfig',
     'print_service.apps.PrintServiceConfig',
     'orders.apps.OrdersConfig',
+    'core.apps.CoreConfig',
 ]
 
 MIDDLEWARE = [

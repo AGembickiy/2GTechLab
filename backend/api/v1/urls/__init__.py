@@ -1,7 +1,14 @@
-from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    MaterialPresetViewSet,
+    PrintJobViewSet,
+    PrintJobResultView,
+    UploadView,
+    ConvertToGlbView,
+)
 
-app_name = 'v1'
+router = DefaultRouter()
+router.register(r'material-presets', MaterialPresetViewSet)
+router.register(r'print-jobs', PrintJobViewSet)
 
-urlpatterns = [
-    path('', include('backend.api.v1.urls.urls')),
-]
+urlpatterns = []

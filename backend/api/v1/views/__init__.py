@@ -1,3 +1,1 @@
-"""
-Views v1
-"""
+# API v1 Views

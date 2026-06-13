@@ -1,17 +1,18 @@
 from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Material, Printer, Order
 
-from django.views.generic import ListView, DetailView
-from .models import Order
 
-class OrderListView(ListView):
-    model = Order
-    template_name = 'shop/order_list.html'
-    context_object_name = 'orders'
+class MaterialViewSet(viewsets.ModelViewSet):
+    queryset = Material.objects.all()
+    serializer_class = None  # Will be implemented
 
-class OrderDetailView(DetailView):
-    model = Order
-    template_name = 'shop/order_detail.html'
-    context_object_name = 'order'
 
-def threejs_model(request):
-    return render(request, 'threejs/model.html')
+class PrinterViewSet(viewsets.ModelViewSet):
+    queryset = Printer.objects.all()
+    serializer_class = None  # Will be implemented
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = None  # Will be implemented

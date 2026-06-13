@@ -1,15 +1,82 @@
+# Python
 venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node.js
 node_modules/
 .nuxt/
 dist/
-__pycache__/
-*.pyc
+.cache/
+
+# Database
+*.sqlite
 *.sqlite3
-media/
-.env
+*.db
 
-.idea/
-.vscode/
+# Frontend
+frontend/package-lock.json
+frontend/node_modules/
+frontend/.nuxt/
 
+# Backup files
+*.backup
+*.bak
+*.tmp
+
+# Testing
 coverage/
 .pytest_cache/
+.nox/
+htmlcov/
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+logs/
+*.log
+temp/
+tmp/

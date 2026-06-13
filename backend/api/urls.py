@@ -1,7 +1,10 @@
-from django.urls import path, include
+from django.urls import path
+from rest_framework.routers import DefaultRouter
+from . import api
 
-app_name = 'api'
+router = DefaultRouter()
+router.registry.extend(api.router.registry)
 
 urlpatterns = [
-    path('v1/', include('backend.api.v1.urls')),
+    path('', include(router.urls)),
 ]
