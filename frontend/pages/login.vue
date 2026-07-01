@@ -49,16 +49,12 @@ definePageMeta({
 })
 
 const route = useRoute()
-const { login, hydrate } = useAdminAuth()
+const { login } = useAdminAuth()
 
 const username = ref('')
 const password = ref('')
 const error = ref('')
 const submitting = ref(false)
-
-onMounted(() => {
-  hydrate()
-})
 
 async function onSubmit() {
   error.value = ''

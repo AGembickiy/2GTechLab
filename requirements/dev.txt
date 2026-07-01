@@ -1,0 +1,18 @@
+# Development dependencies
+-r base.txt
+
+# Testing
+coverage
+pytest
+pytest-django
+
+# Linters
+ruff
+black
+isort
+mypy
+
+# Developer tools
+ipython
+pdbpp
+django-extensions

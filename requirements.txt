@@ -1,18 +1,5 @@
-django>=4.2,<5.0
-djangorestframework
-djangorestframework-simplejwt
-django-cors-headers
-celery
-python-dotenv
-trimesh
-pymeshfix
-numpy
-psycopg[binary]
-drf-spectacular
-gunicorn
+# Development dependencies - managed by pyproject.toml
+# Install with: pip install -e .[dev]
 
-# Для универсальной конвертации 3D-моделей (FBX, OBJ, DAE, GLTF и т.д.)
-# Установите Blender CLI и добавьте в PATH
-# Ubuntu/Debian: apt-get install blender
-# macOS: brew install blender
-# Windows: Скачайте с blender.org и добавьте папку bin в PATH
+# For development, use:
+# pip install -e .[dev]

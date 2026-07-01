@@ -1,6 +1,8 @@
 /**
  * Клиент REST API Django (print pipeline).
  */
+import { computed } from 'vue'
+
 export interface MaterialPresetDto {
   id: number;
   name: string;

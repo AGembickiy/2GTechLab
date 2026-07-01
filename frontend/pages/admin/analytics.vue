@@ -31,7 +31,7 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'admin',
-  middleware: 'admin',
+  middleware: 'auth-check',
 })
 
 const adminApi = useAdminApi()
@@ -40,8 +40,8 @@ const { data: analytics, pending, error } = await useAsyncData('admin-analytics'
 )
 
 const summaryCards = computed(() => [
-  { label: 'Всего заказов', value: String(analytics.value?.orders_count ?? 0) },
-  { label: 'Выручка', value: `${Number(analytics.value?.total_revenue ?? 0).toFixed(2)} ₽` },
-  { label: 'Средний чек', value: `${Number(analytics.value?.avg_check ?? 0).toFixed(2)} ₽` },
+  { label: 'Всего заказов', value: String(analytics.value?.orders?.completed ?? 0) },
+  { label: 'Выручка', value: `${Number(analytics.value?.finance?.revenue ?? 0).toFixed(2)} ₽` },
+  { label: 'Средний чек', value: `${Number(analytics.value?.finance?.avg_check ?? 0).toFixed(2)} ₽` },
 ])
 </script>

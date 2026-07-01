@@ -1,3 +1,5 @@
+import { computed, type ComputedRef } from 'vue'
+
 interface OrderFormState {
   originalFile: File | null;
   file: File | null;

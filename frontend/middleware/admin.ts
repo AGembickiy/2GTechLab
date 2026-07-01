@@ -1,11 +1,17 @@
+/**
+ * Admin middleware - только для авторизованных админов
+ */
+import { useAuthStore } from '@/stores/auth'
+import { ROLES } from '@/constants/roles'
+
 export default defineNuxtRouteMiddleware((to) => {
-  const { isAuthenticated, hydrate } = useAdminAuth()
-  hydrate()
-  if (!isAuthenticated.value) {
-    const redirect =
-      to.path.startsWith('/admin') && to.path !== '/login'
-        ? { redirect: to.fullPath }
-        : undefined
-    return navigateTo({ path: '/login', query: redirect })
+  const authStore = useAuthStore()
+
+  if (!authStore.isAuthenticated) {
+    return navigateTo({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  if (authStore.userRole !== ROLES.ADMIN) {
+    return navigateTo('/')
   }
 })

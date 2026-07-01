@@ -1,84 +1,54 @@
 #!/usr/bin/env bash
 
-set -e
-
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-echo "================================="
-echo "  2GTechLab Startup Script"
-echo "================================="
-
 cd "$ROOT_DIR"
 
-if [ ! -d "venv" ]; then
-    echo "ERROR: venv not found"
-    echo "Create virtual environment first:"
-    echo "python3 -m venv venv"
-    exit 1
+# Параметры запуска
+SKIP_INSTALL=${1:-"false"}
+SKIP_MIGRATE=${2:-"false"}
+
+echo "=== Запуск 2GTechLab ==="
+echo "  Пропустить установку: $SKIP_INSTALL (по умолчанию: false)"
+echo "  Пропустить миграции: $SKIP_MIGRATE (по умолчанию: false)"
+echo ""
+echo "Использование: ./run.sh [skip_install] [skip_migrate]"
+echo "  skip_install: true/false - пропустить установку зависимостей (по умолчанию: false)"
+echo "  skip_migrate: true/false - пропустить применение миграций (по умолчанию: false)"
+
+if [ "$SKIP_INSTALL" = "false" ]; then
+    echo "=== Запуск установки зависимостей ==="
+    "$ROOT_DIR/scripts/install.sh"
 fi
 
+if [ "$SKIP_MIGRATE" = "false" ]; then
+    echo "=== Запуск миграций ==="
+    source venv/bin/activate
+    "$ROOT_DIR/scripts/migrate.sh"
+fi
+
+echo "=== Запуск backend ==="
 source venv/bin/activate
+"$ROOT_DIR/scripts/backend.sh" > /tmp/backend.log 2>&1 &
+BACK_PID=$!
 
-echo ""
-echo "[1/7] Updating pip..."
-python -m pip install --upgrade pip
+echo "=== Запуск frontend ==="
+"$ROOT_DIR/scripts/frontend.sh" > /tmp/frontend.log 2>&1 &
+FRONT_PID=$!
 
-echo ""
-echo "[2/7] Installing Python dependencies..."
-pip install -r requirements.txt
-
-echo ""
-echo "[3/7] Running Django checks..."
-python manage.py check
-
-echo ""
-echo "[4/7] Running migrations..."
-python manage.py migrate
-
-echo ""
-echo "[5/7] Collecting static files..."
-python manage.py collectstatic --noinput
-
-echo ""
-echo "[6/7] Starting Django..."
-
-python manage.py runserver 0.0.0.0:8000 &
-DJANGO_PID=$!
-
-echo "Django PID: $DJANGO_PID"
-
-cd frontend
-
-if [ ! -d "node_modules" ]; then
-    echo ""
-    echo "Installing frontend dependencies..."
-    npm install
-fi
-
-echo ""
-echo "[7/7] Starting Nuxt..."
-
-npm run dev &
-NUXT_PID=$!
-
-echo "Nuxt PID: $NUXT_PID"
+echo "=== Все процессы запущены ==="
+echo "Backend PID: $BACK_PID"
+echo "Frontend PID: $FRONT_PID"
 
 cleanup() {
-    echo ""
-    echo "Stopping services..."
-
-    kill $DJANGO_PID 2>/dev/null || true
-    kill $NUXT_PID 2>/dev/null || true
-
-    exit 0
+    echo "Завершение процессов..."
+    kill $BACK_PID 2>/dev/null || true
+    kill $FRONT_PID 2>/dev/null || true
+    pkill -f "manage.py runserver" 2>/dev/null || true
+    pkill -f "celery" 2>/dev/null || true
+    pkill -f "nuxt dev" 2>/dev/null || true
 }
 
-trap cleanup SIGINT SIGTERM
+trap cleanup SIGINT SIGTERM EXIT
 
-echo ""
-echo "================================="
-echo "Backend : http://localhost:8000"
-echo "Frontend: http://localhost:3000"
-echo "================================="
-
-wait
+# Ждем завершения фоновых процессов
+wait $BACK_PID $FRONT_PID

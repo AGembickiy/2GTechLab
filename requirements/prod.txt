@@ -1,0 +1,5 @@
+# Production dependencies
+-r base.txt
+
+# Production-only packages
+whitenoise

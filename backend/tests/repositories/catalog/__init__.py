@@ -1,0 +1,1 @@
+# Tests repositories catalog package

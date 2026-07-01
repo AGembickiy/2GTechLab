@@ -1,0 +1,28 @@
+# Django core
+django>=4.2,<5.0
+django-environ
+
+# DRF
+djangorestframework
+djangorestframework-simplejwt
+
+# CORS
+django-cors-headers
+
+# Celery и Redis
+celery
+redis
+
+# 3D модели
+trimesh
+pymeshfix
+numpy
+
+# PostgreSQL
+psycopg[binary]
+
+# API документация
+drf-spectacular
+
+# Production
+gunicorn

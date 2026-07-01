@@ -1,3 +1,0 @@
-"""
-Main Django project
-"""

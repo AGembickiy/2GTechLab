@@ -1,10 +1,7 @@
-from django.urls import path
-from rest_framework.routers import DefaultRouter
-from . import api
-
-router = DefaultRouter()
-router.registry.extend(api.router.registry)
+from django.urls import path, include
+from backend.api.v1.accounts.views import LoginView
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('v1/', include('backend.api.v1.urls')),
+    path('token/', LoginView.as_view(), name='token'),
 ]
