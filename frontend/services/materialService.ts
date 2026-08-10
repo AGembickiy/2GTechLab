@@ -1,35 +1,67 @@
-import { useAuthStore } from '@/stores/auth'
+import { BaseService } from './baseService'
 
-export class MaterialService {
+export class MaterialService extends BaseService {
   private baseUrl = '/api/v1/catalog/materials'
-  private authStore = useAuthStore()
 
-  async listMaterials(params?: any): Promise<any> {
-    const url = params
-      ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
-      : `${this.baseUrl}/`
-    return await $fetch(url)
+  async listMaterials(params?: Record<string, any>): Promise<any> {
+    try {
+      const url = params
+        ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
+        : `${this.baseUrl}/`
+
+      return await this.get(url)
+    } catch (error) {
+      console.error('List materials error:', error)
+      throw error
+    }
   }
 
   async getMaterialById(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/`)
+    try {
+      return await this.get(`${this.baseUrl}/${id}/`)
+    } catch (error) {
+      console.error('Get material error:', error)
+      throw error
+    }
   }
 
   async createMaterial(payload: any): Promise<any> {
-    return await $fetch(this.baseUrl, {
-      method: 'POST',
-      body: payload,
-    })
+    try {
+      return await this.post(
+        `${this.baseUrl}/`,
+        payload,
+      )
+    } catch (error) {
+      console.error('Create material error:', error)
+      throw error
+    }
   }
 
-  async updateMaterial(id: number, payload: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/`, {
-      method: 'PUT',
-      body: payload,
-    })
+  async updateMaterial(
+    id: number,
+    payload: any,
+  ): Promise<any> {
+    try {
+      return await this.put(
+        `${this.baseUrl}/${id}/`,
+        payload,
+      )
+    } catch (error) {
+      console.error('Update material error:', error)
+      throw error
+    }
   }
 
   async deleteMaterial(id: number): Promise<void> {
-    await $fetch(`${this.baseUrl}/${id}/`, { method: 'DELETE' })
+    try {
+      await this.delete(
+        `${this.baseUrl}/${id}/`,
+      )
+    } catch (error) {
+      console.error('Delete material error:', error)
+      throw error
+    }
   }
 }
+
+export const materialService = new MaterialService()

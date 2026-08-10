@@ -1,35 +1,65 @@
-import { useAuthStore } from '@/stores/auth'
+import { useNuxtApp } from '#app'
 
-export class PrinterService {
-  private baseUrl = '/api/v1/printers'
-  private authStore = useAuthStore()
+export class PrintJobService {
+  private baseUrl = '/v1/print_service/print-jobs'
 
-  async listPrinters(params?: any): Promise<any> {
+  private get api() {
+    return useNuxtApp().$api
+  }
+
+  async listPrintJobs(params?: Record<string, any>): Promise<any> {
     const url = params
-      ? `${this.baseUrl}/printers/?${new URLSearchParams(params).toString()}`
-      : `${this.baseUrl}/printers/`
-    return await $fetch(url)
+      ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
+      : `${this.baseUrl}/`
+
+    return await this.api(url)
   }
 
-  async getPrinterById(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/printers/${id}/`)
+  async getPrintJobById(id: number): Promise<any> {
+    return await this.api(`${this.baseUrl}/${id}/`)
   }
 
-  async createPrinter(payload: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/printers/`, {
+  async createPrintJob(
+    file: File,
+    uploadKind: 'model' | 'sketch',
+  ): Promise<any> {
+    const formData = new FormData()
+
+    formData.append('original_file', file)
+    formData.append('upload_kind', uploadKind)
+
+    return await this.api(`${this.baseUrl}/`, {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
+  async startSlicing(
+    jobId: number,
+    payload: any,
+  ): Promise<any> {
+    return await this.api(`${this.baseUrl}/${jobId}/slice/`, {
       method: 'POST',
       body: payload,
     })
   }
 
-  async updatePrinter(id: number, payload: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/printers/${id}/`, {
-      method: 'PUT',
-      body: payload,
+  async cancelJob(jobId: number): Promise<any> {
+    return await this.api(`${this.baseUrl}/${jobId}/cancel/`, {
+      method: 'POST',
     })
   }
 
-  async deletePrinter(id: number): Promise<void> {
-    await $fetch(`${this.baseUrl}/printers/${id}/`, { method: 'DELETE' })
+  async listMaterialPresets(): Promise<any> {
+    return await this.api(`${this.baseUrl}/material-presets/`)
+  }
+
+  async createMaterialPreset(payload: any): Promise<any> {
+    return await this.api(`${this.baseUrl}/material-presets/`, {
+      method: 'POST',
+      body: payload,
+    })
   }
 }
+
+export const printJobService = new PrintJobService()

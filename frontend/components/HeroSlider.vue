@@ -1,79 +1,189 @@
 <template>
-  <section
-    class="relative h-[50vh] min-h-[220px] w-full overflow-hidden bg-[radial-gradient(circle_at_center,_#0f172a_0%,_#020617_100%)]"
-    aria-label="Фото мастерской"
-  >
-    <div class="relative mx-auto h-full w-full max-w-[1400px]" role="presentation">
-      <div
-        v-for="(item, index) in items"
-        :key="item.src"
-        class="absolute aspect-[4/3] cursor-pointer transition-all duration-500 ease-out"
-        :class="[{ 'z-[1000]': index === activeIndex }, '']"
-        :style="itemStyle(index)"
-        @click.stop="toggleActive(index)"
-      >
-        <div class="h-full w-full overflow-hidden rounded-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-          <img
-            :src="item.src"
-            :alt="item.alt"
-            loading="lazy"
-            class="block h-full w-full object-cover transition-transform duration-500 hover:scale-[1.05]"
-          />
+  <section class="relative overflow-hidden py-16 lg:py-20">
+
+    <div class="container-main">
+
+      <div class="grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+
+
+        <!-- Text -->
+
+        <div class="flex min-h-[420px] flex-col justify-between pt-2">
+
+
+          <div>
+
+            <h1
+              class="max-w-xl text-4xl font-black leading-[1.08] text-white lg:text-5xl"
+            >
+              Профессиональная
+              <span class="text-indigo-400">
+                3D печать
+              </span>
+              на заказ
+            </h1>
+
+
+            <p
+              class="mt-8 max-w-lg text-lg leading-relaxed text-slate-300 lg:text-xl"
+            >
+              Производство деталей, прототипов
+              и инженерных моделей.
+              От идеи до готового изделия.
+            </p>
+
+
+            <div class="mt-12 flex flex-wrap gap-4">
+
+              <NuxtLink
+                to="/order"
+                class="button-primary"
+              >
+                Создать заказ
+              </NuxtLink>
+
+
+              <NuxtLink
+                to="/models"
+                class="button-secondary"
+              >
+                Каталог моделей
+              </NuxtLink>
+
+            </div>
+
+          </div>
+
+
+
+          <!-- Info -->
+
+          <div
+            class="grid max-w-lg grid-cols-3 gap-6 border-t border-white/10 pt-8"
+          >
+
+
+            <div>
+
+              <div class="text-2xl font-black text-white">
+                24/7
+              </div>
+
+              <div class="mt-1 text-sm text-slate-400">
+                Приём заказов
+              </div>
+
+            </div>
+
+
+
+            <div>
+
+              <div class="text-2xl font-black text-white">
+                Высокая
+              </div>
+
+              <div class="mt-1 text-sm text-slate-400">
+                Точность печати
+              </div>
+
+            </div>
+
+
+
+            <div>
+
+              <div class="text-2xl font-black text-white">
+                AMS
+              </div>
+
+              <div class="mt-1 text-sm text-slate-400">
+                Разные материалы
+              </div>
+
+            </div>
+
+
+          </div>
+
+
         </div>
+
+
+
+
+
+        <!-- Gallery -->
+
+
+        <div
+          class="relative h-[420px]"
+        >
+
+
+          <img
+            v-for="(image,index) in slides"
+            :key="image"
+            :src="image"
+            alt="3D project"
+            class="absolute h-52 w-72 rounded-3xl object-cover shadow-[0_25px_60px_rgba(0,0,0,0.45)] transition-all duration-700 hover:z-50 hover:scale-125 hover:rotate-0"
+            :class="[
+              positions[index],
+              animations[index]
+            ]"
+          />
+
+
+        </div>
+
+
       </div>
+
+
     </div>
+
+
   </section>
 </template>
 
+
+
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue';
-const items = [
-  { src: '/slider/slide-1.avif', alt: '3D‑принтер — синий объект' },
-  { src: '/slider/slide-2.avif', alt: '3D‑принтер — механическая деталь' },
-  { src: '/slider/slide-3.avif', alt: '3D‑печать декоративной вазы' },
-  { src: '/slider/slide-4.avif', alt: 'Печать вазы с разноцветным PLA' },
-  { src: '/slider/slide-5.webp', alt: 'Детали, напечатанные на 3D‑принтере' }
-];
 
-// Позиции и повороты как в old HeroSlider.tsx
-const LAYOUT = [
-  { left: 5, rotate: -6, width: 18 },
-  { left: 23, rotate: 3, width: 18 },
-  { left: 41, rotate: -4, width: 18 },
-  { left: 59, rotate: 5, width: 18 },
-  { left: 77, rotate: -3, width: 18 }
-];
 
-const activeIndex = ref<number | null>(null);
+const slides = [
 
-const clearActive = () => {
-  activeIndex.value = null;
-};
+  "/portfolio/work-1.avif",
+  "/portfolio/work-2.avif",
+  "/portfolio/work-3.avif",
+  "/portfolio/work-4.avif",
+  "/portfolio/work-5.webp"
 
-const toggleActive = (index: number) => {
-  activeIndex.value = activeIndex.value === index ? null : index;
-};
+]
 
-onMounted(() => {
-  window.addEventListener('click', clearActive);
-});
 
-onBeforeUnmount(() => {
-  window.removeEventListener('click', clearActive);
-});
 
-const itemStyle = (index: number) => {
-  const pos = LAYOUT[index % LAYOUT.length];
-  const isActive = activeIndex.value === index;
+const positions = [
 
-  return {
-    left: isActive ? '50%' : `${pos.left}%`,
-    top: '50%',
-    width: isActive ? '30%' : `${pos.width}%`,
-    transform: isActive
-      ? 'translate(-50%, -50%) scale(1.03) rotate(0deg)'
-      : `translateY(-50%) rotate(${pos.rotate}deg)`,
-    zIndex: isActive ? 1000 : 10 + index
-  };
-};
+  "top-0 right-28 rotate-6",
+  "top-20 right-0 -rotate-6",
+  "bottom-16 right-36 rotate-3",
+  "bottom-0 right-4 -rotate-3",
+  "top-10 right-52"
+
+]
+
+
+
+const animations = [
+
+  "animate-float1",
+  "animate-float2",
+  "animate-float3",
+  "animate-float4",
+  "animate-float5"
+
+]
+
+
 </script>

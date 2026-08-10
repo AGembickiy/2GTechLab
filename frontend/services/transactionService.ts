@@ -1,44 +1,56 @@
-import { useAuthStore } from '@/stores/auth'
+import { BaseService } from './baseService'
 
-export class TransactionService {
-  private baseUrl = '/api/v1/finance/transactions'
-  private authStore = useAuthStore()
+export class TransactionService extends BaseService {
+  private baseUrl = '/v1/finance/transactions'
 
-  async listTransactions(params?: any): Promise<any> {
-    const url = params
-      ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
-      : `${this.baseUrl}/`
-    return await $fetch(url, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+  async listTransactions(
+    params?: Record<string, any>,
+  ): Promise<any> {
+    try {
+      const url = params
+        ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
+        : `${this.baseUrl}/`
+
+      return await this.get(url)
+    } catch (error) {
+      console.error('List transactions error:', error)
+      throw error
+    }
   }
 
   async getTransactionById(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      return await this.get(
+        `${this.baseUrl}/${id}/`,
+      )
+    } catch (error) {
+      console.error('Get transaction error:', error)
+      throw error
+    }
   }
 
   async createTransaction(payload: any): Promise<any> {
-    return await $fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-      body: payload,
-    })
+    try {
+      return await this.post(
+        `${this.baseUrl}/`,
+        payload,
+      )
+    } catch (error) {
+      console.error('Create transaction error:', error)
+      throw error
+    }
   }
 
   async refundTransaction(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/refund/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      return await this.post(
+        `${this.baseUrl}/${id}/refund/`,
+      )
+    } catch (error) {
+      console.error('Refund transaction error:', error)
+      throw error
+    }
   }
 }
+
+export const transactionService = new TransactionService()

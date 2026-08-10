@@ -1,5 +1,0 @@
-# Development dependencies - managed by pyproject.toml
-# Install with: pip install -e .[dev]
-
-# For development, use:
-# pip install -e .[dev]

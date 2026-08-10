@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { converterService } from '~/services/converterService'
 import { useOrderForm } from '~/composables/useOrderForm';
 import type { MaterialPresetDto } from '~/composables/usePrintApi';
-import type { ThreeViewerSurfaceClickPayload } from '~/types/three-viewer';
+import type { ThreeViewerSurfaceClickPayload } from '~/types/three/three-viewer';
 import {
   buildEditedGlbName,
   buildEditedStlName,
   getExtension,
   is3dLikeExtension,
 } from '~/utils/fileUploadModelRules';
+
+const { createProject } = useUploadModel()
 
 type MaterialType = 'pla' | 'petg' | 'abs' | '';
 type ColorType = 'white' | 'black' | 'gray' | 'red' | 'blue' | 'green' | 'custom' | '';
@@ -389,29 +392,28 @@ function isImage(file: File): boolean {
 }
 
 async function convert3dToGlbIfPossible(file: File): Promise<File> {
+
   const ext = getExtension(file.name);
+
   logUploadStage('Конвертация в GLB: начало');
+
   if (ext === 'glb') {
+
     logUploadStage('Конвертация в GLB: файл уже GLB, пропуск');
+
     return file;
+
   }
 
-  if (!import.meta.client) return file;
+  if (!import.meta.client)
+    return file;
 
-  // Server-assisted path: convert any supported 3D source to GLB.
-  const form = new FormData();
-  form.append('file', file, file.name);
+  const converted = await converterService.convertToGlb(file);
 
-  const glbArrayBuffer = await $fetch<ArrayBuffer>('/api/convert-to-glb', {
-    method: 'POST',
-    body: form,
-    responseType: 'arrayBuffer',
-  });
-
-  const blob = new Blob([glbArrayBuffer], { type: 'model/gltf-binary' });
-  const converted = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.glb', { type: 'model/gltf-binary' });
   logUploadStage('Конвертация в GLB: готово');
+
   return converted;
+
 }
 
 async function onChange(event: Event) {
@@ -513,13 +515,20 @@ async function handleSelectedFile(file: File | null) {
   resetPreview();
   originalFile.value = file;
   modelValue.value = null;
+
   if (!file) return;
+
+  // создаём проект сразу после выбора файла
+  await createProject(file);
 
   isBusy.value = true;
   try {
     if (isImage(file)) {
       logUploadStage('Определён тип: изображение');
       modelValue.value = file;
+
+      await createProject(file);
+
       previewKind.value = 'image';
       previewUrl.value = URL.createObjectURL(file);
       isPreviewOpen.value = true;
@@ -540,7 +549,11 @@ async function handleSelectedFile(file: File | null) {
     }
 
     const working = await convert3dToGlbIfPossible(file);
+
     modelValue.value = working;
+
+    await createProject(working);
+
     isStlEdited.value = false;
     previewKind.value = getExtension(working.name) === 'glb' ? 'glb' : null;
     if (previewKind.value === 'glb') {
@@ -604,17 +617,9 @@ async function handleSelectedFile(file: File | null) {
   </div>
 
   <ClientOnly>
-    <UModal
+    <AppModal
       v-model="isPreviewOpen"
-      :ui="{
-        wrapper: 'z-[100]',
-        container: 'flex items-center justify-center h-screen w-screen',
-        width: 'w-full max-w-full',
-        height: 'h-full max-h-full',
-        rounded: 'rounded-none',
-        margin: 'm-0',
-        padding: 'p-0',
-      }"
+      fullscreen
     >
       <div
         class="fixed inset-0 flex flex-col bg-slate-950 p-4 sm:p-6 overflow-hidden"
@@ -627,7 +632,7 @@ async function handleSelectedFile(file: File | null) {
               {{ modelValue?.name ?? originalFile?.name ?? '' }}
             </div>
           </div>
-          <UButton color="gray" variant="ghost" size="sm" @click="isPreviewOpen = false">Закрыть</UButton>
+          <AppButton color="gray" variant="ghost" size="sm" @click="isPreviewOpen = false">Закрыть</AppButton>
         </div>
 
         <!-- Ошибка: если есть -->
@@ -784,6 +789,6 @@ async function handleSelectedFile(file: File | null) {
             </div>
           </div>
         </div>
-      </UModal>
+      </AppModal>
     </ClientOnly>
   </template>

@@ -1,1 +1,0 @@
-# Backend Celery tasks module

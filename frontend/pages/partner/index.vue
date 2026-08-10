@@ -14,10 +14,10 @@
     <div class="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-bold text-slate-100">Мои модели</h2>
-        <UButton color="primary" @click="navigateTo('/models')">
-          <template #icon><UIcon name="i-heroicons-plus" class="h-4 w-4" /></template>
+        <AppButton color="primary" @click="navigateTo('/partner/models')">
+          <template #icon><Icon name="i-heroicons-plus" class="h-4 w-4" /></template>
           Добавить модель
-        </UButton>
+        </AppButton>
       </div>
 
       <div v-if="pending" class="mt-4 text-sm text-slate-400">Загрузка…</div>
@@ -33,7 +33,7 @@
         >
           <div class="flex items-center gap-3">
             <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-800/50">
-              <UIcon name="i-heroicons-cube" class="h-6 w-6 text-cyan-400" />
+              <Icon name="i-heroicons-cube" class="h-6 w-6 text-cyan-400" />
             </div>
             <div>
               <p class="font-semibold text-slate-200">{{ model.name }}</p>

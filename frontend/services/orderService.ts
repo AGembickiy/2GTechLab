@@ -1,73 +1,101 @@
-import { useAuthStore } from '@/stores/auth'
+import { useNuxtApp } from '#app'
+
+import type {
+  CreateOrderDto,
+  OrderDto,
+  OrderListParams,
+  OrderParametersDto,
+  UpdateOrderStatusDto,
+} from '~/types/api/orders'
 
 export class OrderService {
-  private baseUrl = '/api/v1/orders'
-  private authStore = useAuthStore()
+  private readonly baseUrl = '/v1/orders'
 
-  async listOrders(params?: any): Promise<any> {
+  private get api() {
+    return useNuxtApp().$api
+  }
+
+  async listOrders(
+    params?: OrderListParams,
+  ): Promise<OrderDto[]> {
     const url = params
-      ? `${this.baseUrl}/orders/?${new URLSearchParams(params).toString()}`
+      ? `${this.baseUrl}/orders/?${new URLSearchParams(
+          Object.entries(params)
+            .filter(([, value]) => value !== undefined)
+            .map(([key, value]) => [key, String(value)]),
+        ).toString()}`
       : `${this.baseUrl}/orders/`
-    return await $fetch(url, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+
+    return await this.api(url)
   }
 
-  async getOrderById(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/orders/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+  async getOrderById(
+    id: number,
+  ): Promise<OrderDto> {
+    return await this.api(
+      `${this.baseUrl}/orders/${id}/`,
+    )
   }
 
-  async createOrder(payload: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/orders/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
+  async createOrder(
+    payload: CreateOrderDto,
+  ): Promise<OrderDto> {
+    return await this.api(
+      `${this.baseUrl}/orders/`,
+      {
+        method: 'POST',
+        body: payload,
       },
-      body: payload,
-    })
+    )
   }
 
-  async updateOrderStatus(id: number, status: string): Promise<any> {
-    return await $fetch(`${this.baseUrl}/orders/${id}/`, {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
+  async updateOrderStatus(
+    id: number,
+    payload: UpdateOrderStatusDto,
+  ): Promise<OrderDto> {
+    return await this.api(
+      `${this.baseUrl}/orders/${id}/`,
+      {
+        method: 'PATCH',
+        body: payload,
       },
-      body: { status },
-    })
+    )
   }
 
-  async deleteOrder(id: number): Promise<void> {
-    await $fetch(`${this.baseUrl}/orders/${id}/`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
+  async deleteOrder(
+    id: number,
+  ): Promise<void> {
+    await this.api(
+      `${this.baseUrl}/orders/${id}/`,
+      {
+        method: 'DELETE',
       },
-    })
+    )
   }
 
-  async createOrderParameters(id: number, parameters: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/orders/${id}/parameters/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
+  async createOrderParameters(
+    id: number,
+    payload: OrderParametersDto,
+  ): Promise<OrderDto> {
+    return await this.api(
+      `${this.baseUrl}/orders/${id}/parameters/`,
+      {
+        method: 'POST',
+        body: payload,
       },
-      body: parameters,
-    })
+    )
   }
 
-  async submitOrder(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/orders/${id}/submit/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
+  async submitOrder(
+    id: number,
+  ): Promise<OrderDto> {
+    return await this.api(
+      `${this.baseUrl}/orders/${id}/submit/`,
+      {
+        method: 'POST',
       },
-    })
+    )
   }
 }
+
+export const orderService = new OrderService()

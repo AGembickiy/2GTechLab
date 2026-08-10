@@ -14,10 +14,10 @@
     <div class="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-bold text-slate-100">Мои заказы</h2>
-        <UButton color="primary" @click="navigateTo('/order')">
-          <template #icon><UIcon name="i-heroicons-plus" class="h-4 w-4" /></template>
+        <AppButton color="primary" @click="navigateTo('/order')">
+          <template #icon><Icon name="i-heroicons-plus" class="h-4 w-4" /></template>
           Новый заказ
-        </UButton>
+        </AppButton>
       </div>
 
       <div v-if="pending" class="mt-4 text-sm text-slate-400">Загрузка…</div>

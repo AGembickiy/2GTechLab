@@ -1,20 +1,21 @@
+```vue
 <template>
-  <div class="w-full py-6 px-4">
-    <div class="mx-auto max-w-6xl space-y-4">
-      <div>
-        <h1 class="text-2xl font-bold">Заказать 3D‑печать</h1>
-        <p class="mt-2 text-sm text-slate-300">
-          Загрузите модель или отправьте эскиз — система рассчитает примерную стоимость и время печати.
-        </p>
-      </div>
+  <div class="flex flex-col">
 
-      <div class="grid gap-6 lg:grid-cols-[1fr_min(360px,100%)]">
-        <OrderForm />
-        <OrderSummary />
-      </div>
-    </div>
+    <!-- Order -->
+    <section class="bg-gradient-to-br from-graphite via-black to-titanium py-16">
+      <AppContainer>
+        <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <OrderForm />
+
+          <OrderSummary />
+        </div>
+      </AppContainer>
+    </section>
+
   </div>
 </template>
 
 <script setup lang="ts">
 </script>
+```

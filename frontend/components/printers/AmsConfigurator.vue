@@ -36,7 +36,7 @@ const toggleSlot = (id: number) => {
   <div class="ams-configurator space-y-4">
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-        <UIcon name="i-heroicons-cube-transparent" />
+        <Icon name="i-heroicons-cube-transparent" />
         Конфигурация AMS Lite (A1 Combo)
       </h3>
       <span class="text-xs text-gray-500">{{ modelValue.length }}/4 слота</span>
@@ -63,18 +63,18 @@ const toggleSlot = (id: number) => {
           <p class="text-xs text-gray-500">{{ m.type }}</p>
         </div>
         <div v-if="modelValue.includes(m.id)" class="absolute top-2 right-2">
-          <UIcon name="i-heroicons-check-circle-20-solid" class="text-primary-500 w-5 h-5" />
+          <Icon name="i-heroicons-check-circle-20-solid" class="text-primary-500 w-5 h-5" />
         </div>
       </div>
     </div>
 
-    <UAlert
-      v-if="modelValue.length === 0"
-      icon="i-heroicons-information-circle"
-      color="orange"
-      variant="soft"
-      title="Внимание"
-      description="Выберите хотя бы один материал для печати."
-    />
+    <div v-if="modelValue.length === 0"class="flex items-start gap-3 rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 text-orange-300">
+      <Icon name="i-heroicons-information-circle" class="mt-0.5 h-5 w-5 shrink-0"/>
+      <div>
+        <div class="font-semibold">Внимание</div>
+        <div class="text-sm text-orange-200">Выберите хотя бы один материал для печати.</div>
+      </div>
+
+    </div>
   </div>
 </template>

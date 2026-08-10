@@ -63,9 +63,9 @@ onUnmounted(() => {
   <div class="relative w-full h-[400px] bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
     <div ref="container" class="w-full h-full"></div>
     <div class="absolute bottom-4 left-4 flex gap-2">
-      <UBadge v-for="m in activeMaterials" :key="m.id" :style="{ backgroundColor: m.color }" class="text-white shadow-sm">
+      <span v-for="m in activeMaterials" :key="m.id" :style="{ backgroundColor: m.color }" class="text-white shadow-sm">
         {{ m.type }}
-      </UBadge>
+      </span>
     </div>
   </div>
 </template>

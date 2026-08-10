@@ -1,72 +1,94 @@
-import { useAuthStore } from '@/stores/auth'
-
 export class PrintJobService {
-  private baseUrl = '/api/v1/print_service/print-jobs'
-  private authStore = useAuthStore()
+  private baseUrl = '/v1/print_service/print-jobs'
 
-  async listPrintJobs(params?: any): Promise<any> {
-    const url = params
-      ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
-      : `${this.baseUrl}/`
-    return await $fetch(url, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+  private get api() {
+    return useNuxtApp().$api
+  }
+
+  async listPrintJobs(params?: Record<string, any>): Promise<any> {
+    try {
+      const url = params
+        ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
+        : `${this.baseUrl}/`
+
+      return await this.api(url)
+    } catch (error) {
+      console.error('List print jobs error:', error)
+      throw error
+    }
   }
 
   async getPrintJobById(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      return await this.api(`${this.baseUrl}/${id}/`)
+    } catch (error) {
+      console.error('Get print job error:', error)
+      throw error
+    }
   }
 
-  async createPrintJob(file: File, uploadKind: 'model' | 'sketch'): Promise<any> {
-    const formData = new FormData()
-    formData.append('original_file', file)
-    formData.append('upload_kind', uploadKind)
+  async createPrintJob(
+    file: File,
+    uploadKind: 'model' | 'sketch',
+  ): Promise<any> {
+    try {
+      const formData = new FormData()
+      formData.append('original_file', file)
+      formData.append('upload_kind', uploadKind)
 
-    return await $fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-      body: formData,
-    })
+      return await this.api(`${this.baseUrl}/`, {
+        method: 'POST',
+        body: formData,
+      })
+    } catch (error) {
+      console.error('Create print job error:', error)
+      throw error
+    }
   }
 
   async startSlicing(jobId: number, payload: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${jobId}/slice/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-      body: payload,
-    })
+    try {
+      return await this.api(`${this.baseUrl}/${jobId}/slice/`, {
+        method: 'POST',
+        body: payload,
+      })
+    } catch (error) {
+      console.error('Start slicing error:', error)
+      throw error
+    }
   }
 
   async cancelJob(jobId: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${jobId}/cancel/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      return await this.api(`${this.baseUrl}/${jobId}/cancel/`, {
+        method: 'POST',
+      })
+    } catch (error) {
+      console.error('Cancel print job error:', error)
+      throw error
+    }
   }
 
   async listMaterialPresets(): Promise<any> {
-    return await $fetch(`${this.baseUrl}/material-presets/`)
+    try {
+      return await this.api(`${this.baseUrl}/material-presets/`)
+    } catch (error) {
+      console.error('List material presets error:', error)
+      throw error
+    }
   }
 
   async createMaterialPreset(payload: any): Promise<any> {
-    return await $fetch(`${this.baseUrl}/material-presets/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-      body: payload,
-    })
+    try {
+      return await this.api(`${this.baseUrl}/material-presets/`, {
+        method: 'POST',
+        body: payload,
+      })
+    } catch (error) {
+      console.error('Create material preset error:', error)
+      throw error
+    }
   }
 }
+
+export const printJobService = new PrintJobService()

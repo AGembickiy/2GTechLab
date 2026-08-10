@@ -1,3 +1,0 @@
-"""
-Telegram notification service.
-"""

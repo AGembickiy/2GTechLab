@@ -1,45 +1,26 @@
-# 2GTechLab Scripts
+# 2GTechLab Scripts (Frontend only)
 
 Этот каталог содержит скрипты запуска и управления проектом.
 
 ## Доступные скрипты
 
 ### `install.sh`
-Установка зависимостей:
-- Создание виртуального окружения (если не существует)
-- Установка Python-зависимостей из `requirements/dev.txt`
+Установка frontend зависимостей:
+- Проверка Node.js и npm
 - Установка frontend-зависимостей (npm install)
-
-### `migrate.sh`
-Применение миграций:
-- Создание новых миграций
-- Применение всех миграций
-- Сборка статических файлов
-
-### `backend.sh`
-Запуск Django backend на `http://localhost:8000`
 
 ### `frontend.sh`
 Запуск Nuxt frontend на `http://localhost:3000`
-
-### `run.sh`
-Запуск всего проекта:
-1. Установка зависимостей
-2. Применение миграций
-3. Запуск backend и frontend в фоновом режиме
-4. Обработка SIGINT/SIGTERM для корректного завершения
 
 ## Использование
 
 ```bash
 # Запуск всего проекта
-./scripts/run.sh
+./run.sh
 
 # Или по отдельности
 ./scripts/install.sh
-./scripts/migrate.sh
-./scripts/backend.sh &
-./scripts/frontend.sh &
+./scripts/frontend.sh
 ```
 
 ## Окружение

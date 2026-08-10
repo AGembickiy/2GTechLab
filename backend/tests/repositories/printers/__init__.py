@@ -1,1 +1,0 @@
-# Tests repositories printers package

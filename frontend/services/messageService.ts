@@ -1,53 +1,67 @@
-import { useAuthStore } from '@/stores/auth'
+import { BaseService } from './baseService'
 
-export class MessageService {
-  private baseUrl = '/api/v1/internal_messages/messages'
-  private authStore = useAuthStore()
+export class MessageService extends BaseService {
+  private baseUrl = '/v1/internal_messages/messages'
 
-  async listMessages(params?: any): Promise<any> {
-    const url = params
-      ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
-      : `${this.baseUrl}/`
-    return await $fetch(url, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+  async listMessages(
+    params?: Record<string, any>,
+  ): Promise<any> {
+    try {
+      const url = params
+        ? `${this.baseUrl}/?${new URLSearchParams(params).toString()}`
+        : `${this.baseUrl}/`
+
+      return await this.get(url)
+    } catch (error) {
+      console.error('List messages error:', error)
+      throw error
+    }
   }
 
   async getMessageById(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/`, {
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      return await this.get(
+        `${this.baseUrl}/${id}/`,
+      )
+    } catch (error) {
+      console.error('Get message error:', error)
+      throw error
+    }
   }
 
   async createMessage(payload: any): Promise<any> {
-    return await $fetch(this.baseUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-      body: payload,
-    })
+    try {
+      return await this.post(
+        `${this.baseUrl}/`,
+        payload,
+      )
+    } catch (error) {
+      console.error('Create message error:', error)
+      throw error
+    }
   }
 
   async markAsRead(id: number): Promise<any> {
-    return await $fetch(`${this.baseUrl}/${id}/read/`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      return await this.post(
+        `${this.baseUrl}/${id}/read/`,
+      )
+    } catch (error) {
+      console.error('Mark message as read error:', error)
+      throw error
+    }
   }
 
   async deleteMessage(id: number): Promise<void> {
-    await $fetch(`${this.baseUrl}/${id}/`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${this.authStore.accessToken}`,
-      },
-    })
+    try {
+      await this.delete(
+        `${this.baseUrl}/${id}/`,
+      )
+    } catch (error) {
+      console.error('Delete message error:', error)
+      throw error
+    }
   }
 }
+
+export const messageService = new MessageService()

@@ -1,1 +1,0 @@
-# Tests services accounts package

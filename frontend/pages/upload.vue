@@ -8,7 +8,7 @@
         </p>
       </div>
 
-      <UCard>
+      <AppCard>
       <input
         type="file"
         class="block w-full cursor-pointer text-sm text-slate-200 file:mr-4 file:rounded-md file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-sky-500"
@@ -18,16 +18,16 @@
       <div v-if="uploadStatus" class="status mt-3 text-sm text-slate-300">
         {{ uploadStatus }}
       </div>
-    </UCard>
+    </AppCard>
 
-    <UModal v-model="showModal" fullscreen :ui="{ width: 'max-w-full', margin: 'm-0', rounded: 'rounded-none' }">
+    <AppModal v-model="showModal" fullscreen>
       <div class="relative flex flex-col h-screen bg-black overflow-hidden">
         <!-- Header (Floating) -->
         <div class="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-slate-900/40 backdrop-blur-md border-b border-white/5 z-20">
           <span class="font-medium text-slate-200 text-xs uppercase tracking-widest">
             {{ is3D ? '3D Preview' : 'Sketch Preview' }}
           </span>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="closeModal" />
+          <AppButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="closeModal" />
         </div>
 
         <!-- Viewer (Full Screen Background) -->
@@ -77,7 +77,7 @@
             </div>
 
             <div class="pt-4 border-t border-white/5">
-              <UButton
+              <AppButton
                 block
                 color="primary"
                 size="md"
@@ -86,11 +86,11 @@
                 @click="assignSelectionToActiveSlot"
               >
                 Назначить выбранным
-              </UButton>
+              </AppButton>
             </div>
 
             <div class="pt-4 border-t border-white/5">
-              <UButton
+              <AppButton
                 block
                 color="gray"
                 size="md"
@@ -99,17 +99,17 @@
                 @click="resetToBaseState"
               >
                 Сбросить
-              </UButton>
+              </AppButton>
             </div>
 
             <div class="pt-4 border-t border-white/5 space-y-4">
-              <UButton 
+              <AppButton 
                 class="w-full justify-center rounded-xl py-3" 
                 :disabled="!isFormValid || busyCalc" 
                 @click="submitForSlicing"
               >
                 {{ busyCalc ? 'Считаем…' : 'Рассчитать стоимость' }}
-              </UButton>
+              </AppButton>
               
               <div v-if="calculationResult" class="result space-y-2 text-sm text-slate-200 bg-white/5 p-4 rounded-xl border border-white/5">
                 <p v-if="calculationResult.detail" class="text-rose-400 text-xs">{{ calculationResult.detail }}</p>
@@ -128,17 +128,17 @@
           </div>
         </div>
       </div>
-    </UModal>
+    </AppModal>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { MaterialPresetDto, PrintJobResultDto } from '~/composables/usePrintApi';
-import type { ThreeViewerSurfaceClickPayload } from '~/types/three-viewer';
+import type { ThreeViewerSurfaceClickPayload } from '~/types/three/three-viewer';
 import type { ComponentPublicInstance } from 'vue';
 
-import ThreeViewer from '~/components/ThreeViewer.vue';
+import ThreeViewer from '~/components/three/ThreeViewer.vue';
 
 type SlotRow = { index: number; materialId: number | null; material: MaterialPresetDto | null };
 
@@ -254,6 +254,16 @@ function assignSlotToSelection(slot: SlotRow) {
   activeSlotIndex.value = slot.index - 1;
   const v = viewerRef.value as { assignSelectionToActiveSlot?: () => void } | null;
   nextTick(() => v?.assignSelectionToActiveSlot?.());
+}
+
+function assignSelectionToActiveSlot() {
+  const slot = slots[activeSlotIndex.value]
+
+  if (!slot) return
+  if (!slot.material) return
+  if (selectedSurfaces.value.length === 0) return
+
+  assignSlotToSelection(slot)
 }
 
 function clearSlot(slot: SlotRow) {

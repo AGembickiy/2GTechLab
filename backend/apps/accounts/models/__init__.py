@@ -1,1 +1,0 @@
-# Accounts models package

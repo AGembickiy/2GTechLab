@@ -1,4 +1,5 @@
 // Services
+export * from './baseService'
 export * from './authService'
 export * from './orderService'
 export * from './materialService'
