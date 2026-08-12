@@ -42,7 +42,7 @@ const value = computed({
           outline-none
           appearance-none
           transition-all
-          focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+          focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
         "
         :class="error ? 'border-red-500' : 'border-slate-700'"
       >

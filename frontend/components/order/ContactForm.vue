@@ -24,7 +24,7 @@ const modelValue = defineModel<OrderFormModel>({ required: true });
         <input
           v-model="modelValue.name"
           type="text"
-          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-400/70 focus:ring-2 focus:ring-sky-400/20"
+          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-400/70 focus:ring-2 focus:ring-indigo-400/20"
         />
       </div>
 
@@ -35,7 +35,7 @@ const modelValue = defineModel<OrderFormModel>({ required: true });
         <input
           v-model="modelValue.phone"
           type="tel"
-          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-400/70 focus:ring-2 focus:ring-sky-400/20"
+          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-400/70 focus:ring-2 focus:ring-indigo-400/20"
         />
       </div>
 
@@ -47,7 +47,7 @@ const modelValue = defineModel<OrderFormModel>({ required: true });
           v-model="modelValue.email"
           type="email"
           placeholder="you@example.com"
-          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-400/70 focus:ring-2 focus:ring-sky-400/20"
+          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-400/70 focus:ring-2 focus:ring-indigo-400/20"
         />
       </div>
 
@@ -57,7 +57,7 @@ const modelValue = defineModel<OrderFormModel>({ required: true });
           v-model="modelValue.deliveryAddress"
           type="text"
           placeholder="Город, улица, дом, офис/квартира"
-          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-sky-400/70 focus:ring-2 focus:ring-sky-400/20"
+          class="w-full rounded-lg border border-slate-800/70 bg-slate-950/30 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-indigo-400/70 focus:ring-2 focus:ring-indigo-400/20"
         />
       </div>
     </div>

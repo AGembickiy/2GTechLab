@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-slate-950 font-sans antialiased selection:bg-blue-500/30">
+  <div class="min-h-screen flex flex-col bg-gradient-to-br from-graphite via-black to-titanium font-sans antialiased selection:bg-indigo-500/30">
     <AppHeader />
 
     <main class="flex-grow w-full">

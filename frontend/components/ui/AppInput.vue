@@ -15,33 +15,31 @@ const emit = defineEmits<{
 
 const value = computed({
   get: () => props.modelValue ?? '',
-  set: (val) => emit('update:modelValue', val)
+  set: (val) => emit('update:modelValue', val),
 })
 </script>
 
 <template>
   <div class="flex flex-col gap-2">
-    <label v-if="label" class="text-sm font-medium text-slate-300">
+    <label
+      v-if="label"
+      class="text-sm font-medium text-slate-300"
+    >
       {{ label }}
     </label>
+
     <input
-      :type="type || 'text'"
       v-model="value"
+      :type="type || 'text'"
       :placeholder="placeholder"
-      class="
-        rounded-lg
-        bg-slate-800/50
-        border
-        px-4 py-3
-        transition-all
-        outline-none
-        placeholder:text-slate-600
-        focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-        disabled:opacity-50
-      "
-      :class="error ? 'border-red-500' : 'border-slate-700'"
+      class="input-ui"
+      :class="error ? 'border-red-500 focus:border-red-500' : ''"
     />
-    <p v-if="error" class="text-xs text-red-500">
+
+    <p
+      v-if="error"
+      class="text-xs text-red-400"
+    >
       {{ error }}
     </p>
   </div>

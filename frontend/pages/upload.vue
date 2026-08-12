@@ -11,7 +11,7 @@
       <AppCard>
       <input
         type="file"
-        class="block w-full cursor-pointer text-sm text-slate-200 file:mr-4 file:rounded-md file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-sky-500"
+        class="block w-full cursor-pointer text-sm text-slate-200 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-indigo-500"
         accept=".stl,.obj,.fbx,.dae,.gltf,.glb,.blend,.skp,.iges,.igs,.step,.stp,.wrl,.vrml,.jpg,.jpeg,.png,.svg"
         @change="onFileSelected"
       />
@@ -60,10 +60,10 @@
             <div class="space-y-3">
               <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Слоты материалов</h3>
               <div class="grid grid-cols-1 gap-2">
-                <div v-for="slot in slots" :key="slot.index" 
+                <div v-for="slot in slots" :key="slot.index"
                   class="flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer"
-                  :class="activeSlotIndex === slot.index - 1 
-                    ? 'border-sky-500/50 bg-sky-500/10 ring-1 ring-sky-500/50' 
+                  :class="activeSlotIndex === slot.index - 1
+                    ? 'border-indigo-500/50 bg-indigo-500/10 ring-1 ring-indigo-500/50'
                     : 'border-white/5 bg-white/5 hover:bg-white/10'"
                   @click="activeSlotIndex = slot.index - 1"
                 >
@@ -71,7 +71,7 @@
                     <div class="w-2 h-2 rounded-full" :style="{ backgroundColor: slotColors[slot.index-1] }" />
                     <span class="text-xs font-medium text-slate-300">Слот {{ slot.index }}</span>
                   </div>
-                  <span v-if="activeSlotIndex === slot.index - 1" class="text-[10px] text-sky-400 font-bold uppercase">Active</span>
+                  <span v-if="activeSlotIndex === slot.index - 1" class="text-[10px] text-indigo-400 font-bold uppercase">Active</span>
                 </div>
               </div>
             </div>
@@ -82,7 +82,7 @@
                 color="primary"
                 size="md"
                 variant="solid"
-                class="rounded-xl shadow-lg shadow-sky-500/20"
+                class="rounded-xl shadow-lg shadow-indigo-500/20"
                 @click="assignSelectionToActiveSlot"
               >
                 Назначить выбранным
@@ -103,20 +103,20 @@
             </div>
 
             <div class="pt-4 border-t border-white/5 space-y-4">
-              <AppButton 
-                class="w-full justify-center rounded-xl py-3" 
-                :disabled="!isFormValid || busyCalc" 
+              <AppButton
+                class="w-full justify-center rounded-xl py-3"
+                :disabled="!isFormValid || busyCalc"
                 @click="submitForSlicing"
               >
                 {{ busyCalc ? 'Считаем…' : 'Рассчитать стоимость' }}
               </AppButton>
-              
+
               <div v-if="calculationResult" class="result space-y-2 text-sm text-slate-200 bg-white/5 p-4 rounded-xl border border-white/5">
                 <p v-if="calculationResult.detail" class="text-rose-400 text-xs">{{ calculationResult.detail }}</p>
                 <template v-else>
                   <div class="flex justify-between items-center">
                     <span class="text-slate-400 text-xs">Стоимость:</span>
-                    <span class="font-bold text-sky-400 text-lg">{{ calculationResult.total_cost != null ? `${calculationResult.total_cost.toFixed(2)} ₽` : '—' }}</span>
+                    <span class="font-bold text-indigo-400 text-lg">{{ calculationResult.total_cost != null ? `${calculationResult.total_cost.toFixed(2)} ₽` : '—' }}</span>
                   </div>
                   <div class="flex justify-between items-center">
                     <span class="text-slate-400 text-xs">Время печати:</span>
@@ -185,13 +185,13 @@ const slotColors = computed(() => slots.map((s) => (s.material?.color_hex ? s.ma
 function resetToBaseState() {
   // Сбрасываем цвета слотов к базовым значениям
   baseSlotColors.value = ['#7dd3fc', '#7dd3fc', '#7dd3fc', '#7dd3fc'];
-  
+
   // Сбрасываем выбранные материалы в слотах
   slots.forEach(slot => {
     slot.materialId = null;
     slot.material = null;
   });
-  
+
   // Уведомляем viewer о необходимости сброса
   nextTick(() => {
     (viewerRef.value as { resetToBaseState?: () => void } | null)?.resetToBaseState?.();

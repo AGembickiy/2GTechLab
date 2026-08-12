@@ -578,7 +578,7 @@ async function handleSelectedFile(file: File | null) {
 </script>
 
 <template>
-  <div class="rounded-2xl border border-slate-800/60 bg-slate-900/30 p-5">
+  <div class="rounded-2xl border border-white/10 bg-white/[0.025] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
     <div class="flex items-start justify-between gap-4">
       <div>
         <div class="text-sm font-semibold">Файл модели</div>
@@ -588,7 +588,7 @@ async function handleSelectedFile(file: File | null) {
       </div>
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-5 py-2 text-xs font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)] transition hover:brightness-110"
+        class="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 px-5 py-2 text-xs font-semibold text-white shadow-lg shadow-indigo-950/30 transition hover:brightness-110"
         @click="openPicker"
       >
         {{ isBusy ? 'Обработка...' : 'Выбрать файл' }}
@@ -597,15 +597,15 @@ async function handleSelectedFile(file: File | null) {
 
     <div class="mt-4">
       <label
-        class="relative flex cursor-pointer flex-col gap-2 rounded-xl border border-dashed border-slate-600/60 bg-slate-950/30 p-4 pr-12 text-sm text-slate-200"
+        class="group relative flex cursor-pointer flex-col gap-2 overflow-hidden rounded-xl border border-dashed border-white/10 bg-black/20 p-4 pr-12 text-sm text-slate-200 transition hover:border-indigo-500/40 hover:bg-indigo-500/[0.05]"
       >
-        <span class="relative z-10 text-slate-300">
+        <span class="relative z-10 text-slate-300 transition group-hover:text-white">
           {{ originalFile?.name ?? modelValue?.name ?? 'Перетащите файл сюда или выберите на компьютере' }}
         </span>
         <button
           v-if="originalFile || modelValue"
           type="button"
-          class="absolute right-3 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-700/70 bg-slate-950/50 text-slate-200 transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400/30"
+          class="absolute right-3 top-1/2 z-20 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-700/70 bg-slate-950/50 text-slate-200 transition hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-400/30"
           aria-label="Очистить файл"
           @click="clearSelectedFile"
         >
@@ -622,7 +622,7 @@ async function handleSelectedFile(file: File | null) {
       fullscreen
     >
       <div
-        class="fixed inset-0 flex flex-col bg-slate-950 p-4 sm:p-6 overflow-hidden"
+        class="fixed inset-0 flex flex-col bg-gradient-to-br from-graphite via-black to-titanium p-4 sm:p-6 overflow-hidden"
       >
         <!-- Заголовок: фиксированная высота -->
         <div class="flex shrink-0 items-start justify-between gap-4 mb-4">
@@ -655,7 +655,7 @@ async function handleSelectedFile(file: File | null) {
 
           <template v-else-if="previewKind === 'glb' && previewUrl">
             <!-- Левая часть: ThreeViewer (Максимальное пространство) -->
-            <div class="flex-1 min-h-0 relative rounded-xl border border-slate-800/70 bg-slate-950/40 overflow-hidden">
+            <div class="flex-1 min-h-0 relative rounded-2xl border border-white/10 bg-black/30 shadow-xl overflow-hidden">
               <ThreeViewer
                 ref="threeViewerRef"
                 class="absolute inset-0 w-full h-full"
@@ -680,7 +680,7 @@ async function handleSelectedFile(file: File | null) {
                 <div class="text-sm font-semibold">Инструменты</div>
 
                 <!-- Секция AMS слотов -->
-                <div class="rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+                <div class="rounded-2xl bg-white/[0.025] p-4">
                   <div class="flex items-center justify-between gap-2 mb-3">
                     <div class="text-xs font-semibold text-slate-200">AMS слоты</div>
                     <div class="flex items-center gap-2">
@@ -708,7 +708,7 @@ async function handleSelectedFile(file: File | null) {
                       v-for="(slot, idx) in visibleAmsSlots"
                       :key="idx"
                       class="rounded-lg border p-2 transition"
-                      :class="idx === activeSlotIndex ? 'border-sky-400/70 bg-sky-400/10' : 'border-slate-800/70 bg-slate-950/20'"
+                      :class="idx === activeSlotIndex ? 'border border-indigo-400/50 bg-indigo-500/10' : 'bg-white/[0.025]'"
                     >
                       <div class="flex items-center justify-between gap-2">
                         <div class="text-[11px] font-semibold text-slate-200">Слот {{ idx + 1 }}</div>
@@ -726,7 +726,7 @@ async function handleSelectedFile(file: File | null) {
                         <div class="relative mt-1">
                           <select
                             v-model="slot.material"
-                            class="w-full appearance-none rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 pr-8 text-xs text-slate-100 shadow-inner outline-none transition focus:border-sky-400/60 focus:ring-2 focus:ring-sky-400/20"
+                            class="w-full appearance-none rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 pr-8 text-xs text-slate-100 shadow-inner outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-400/20"
                             @change="onSlotMaterialChange(idx)"
                           >
                             <option disabled value="">Выберите</option>
@@ -747,7 +747,7 @@ async function handleSelectedFile(file: File | null) {
                             type="button"
                             :title="colorLabel(c)"
                             class="h-6 w-6 rounded-full border transition hover:scale-105"
-                            :class="slot.color === c ? 'border-sky-300 ring-2 ring-sky-400/50' : 'border-slate-700/80'"
+                            :class="slot.color === c ? 'border-indigo-300 ring-2 ring-indigo-400/50' : 'border-slate-700/80'"
                             :style="{ backgroundColor: materialColorHex(slot.material, c) }"
                             @click="setSlotColor(idx, c)"
                           />
@@ -759,7 +759,7 @@ async function handleSelectedFile(file: File | null) {
               </div>
 
               <!-- Нижняя панель: всегда видна внизу правой колонки -->
-              <div class="shrink-0 rounded-xl border border-slate-800/70 bg-slate-950/30 p-3">
+              <div class="shrink-0 rounded-2xl bg-white/[0.025] p-4">
                 <div class="mb-2 text-[10px] leading-tight text-slate-400">
                   Клик: полигон • повторный клик по выделенному — снять • Shift+клик: мультивыбор • Ctrl/Cmd: поверхность
                 </div>
@@ -767,7 +767,7 @@ async function handleSelectedFile(file: File | null) {
                   <button
                     type="button"
                     :disabled="!isStlEdited || isSavingEditedStl"
-                    class="w-full rounded-full bg-gradient-to-r from-blue-600 to-violet-600 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
+                    class="w-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
                     @click="saveEditedStlAndUseInOrder"
                   >
                     {{ isSavingEditedStl ? 'Сохранение...' : 'Использовать изменённый GLB' }}

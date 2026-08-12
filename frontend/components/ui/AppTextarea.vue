@@ -37,7 +37,7 @@ const value = computed({
         outline-none
         transition-all
         placeholder:text-slate-600
-        focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+        focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500
       "
       :class="error ? 'border-red-500' : 'border-slate-700'"
     />

@@ -10,17 +10,11 @@
           to="/"
           class="group flex items-center gap-4"
         >
-          <div
-            class="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 shadow-[0_0_35px_rgba(99,102,241,0.35)]"
-          >
-            <span class="relative text-sm font-black text-white">
-              2G
-            </span>
-          </div>
+          <AppLogo size="md" />
 
           <div class="hidden sm:block">
             <div class="text-sm font-black tracking-[0.28em] text-white">
-              2GTECHLAB
+              TECHLAB
             </div>
 
             <div class="text-xs text-slate-400">
@@ -97,10 +91,6 @@ const navigationItems = [
     label: 'О компании',
     to: '/about'
   },
-  {
-    label: 'Контакты',
-    to: '/contacts'
-  }
 ]
 
 </script>
