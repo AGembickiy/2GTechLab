@@ -3,12 +3,6 @@
     <section class="py-12 md:py-16">
       <AppContainer>
         <div class="mb-10 text-center">
-          <p
-            class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-indigo-400"
-          >
-            TechLab
-          </p>
-
           <h1
             class="text-3xl font-bold tracking-tight text-white md:text-4xl"
           >
