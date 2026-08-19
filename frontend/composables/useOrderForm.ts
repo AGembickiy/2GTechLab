@@ -1,46 +1,53 @@
-import { computed, type ComputedRef } from 'vue'
+import { computed, type ComputedRef } from 'vue';
 
-interface OrderFormState {
-  originalFile: File | null;
-  file: File | null;
-  productName: string;
-  copies: number;
-  material: 'pla' | 'petg' | 'abs' | 'tpu' | '';
-  color: 'white' | 'black' | 'gray' | 'custom' | '';
+export interface OrderFormState {
+  originalFile: File | null
+  file: File | null
+  productName: string
+  copies: number
+  material: 'pla' | 'petg' | 'abs' | 'tpu' | ''
+  color: 'white' | 'black' | 'gray' | 'red' | 'blue' | 'green' | 'custom' | ''
   amsSlots: Array<{
-    material: 'pla' | 'petg' | 'abs' | 'tpu' | '';
-    color: 'white' | 'black' | 'gray' | 'custom' | '';
-  }>;
-  quality: 'draft' | 'standard' | 'high';
-  printType: 'single' | 'multi';
-  postProcessing: Array<'sanding' | 'priming' | 'painting'>;
-  comment: string;
-  name: string;
-  phone: string;
-  email: string;
-  deliveryAddress: string;
+    material: 'pla' | 'petg' | 'abs' | 'tpu' | ''
+    color: 'white' | 'black' | 'gray' | 'red' | 'blue' | 'green' | 'custom' | ''
+  }>
+  quality: 'draft' | 'standard' | 'high'
+  printType: 'single' | 'multi'
+  postProcessing: Array<'sanding' | 'priming' | 'painting'>
+  comment: string
+  name: string
+  phone: string
+  email: string
+  deliveryAddress: string
+  step: 1 | 2
 }
 
 interface OrderDerived {
-  fileName: ComputedRef<string>;
-  fileFormatText: ComputedRef<string>;
-  sizeText: ComputedRef<string>;
-  weightText: ComputedRef<string>;
-  materialUsageGrams: ComputedRef<number>;
-  printTimeHours: ComputedRef<number>;
-  postProcessingText: ComputedRef<string>;
-  totalPriceRub: ComputedRef<number>;
-  totalPriceText: ComputedRef<string>;
-  canSubmit: ComputedRef<boolean>;
+  fileName: ComputedRef<string>
+  fileFormatText: ComputedRef<string>
+  sizeText: ComputedRef<string>
+  weightText: ComputedRef<string>
+  materialUsageGrams: ComputedRef<number>
+  printTimeHours: ComputedRef<number>
+  postProcessingText: ComputedRef<string>
+  totalPriceRub: ComputedRef<number>
+  totalPriceText: ComputedRef<string>
+  canSubmit: ComputedRef<boolean>
 }
 
-const POST_PROCESSING_LABELS: Record<OrderFormState['postProcessing'][number], string> = {
+const POST_PROCESSING_LABELS: Record<
+  OrderFormState['postProcessing'][number],
+  string
+> = {
   sanding: 'Шлифовка',
   priming: 'Грунтовка',
   painting: 'Покраска',
 };
 
-export function useOrderForm(): { form: OrderFormState; derived: OrderDerived } {
+export function useOrderForm(): {
+  form: OrderFormState
+  derived: OrderDerived
+} {
   const form = useState<OrderFormState>('order-form', () => ({
     originalFile: null,
     file: null,
@@ -60,14 +67,18 @@ export function useOrderForm(): { form: OrderFormState; derived: OrderDerived } 
     phone: '',
     email: '',
     deliveryAddress: '',
+    step: 1,
   }));
 
   const fileName = computed(() => form.value.file?.name ?? '');
 
   const fileFormatText = computed(() => {
-    if (!fileName.value) return 'Определится по расширению';
+    if (!fileName.value) {
+      return 'Определится по расширению';
+    }
 
     const parts = fileName.value.split('.');
+
     return parts.length > 1
       ? parts.at(-1)?.toUpperCase() ?? '—'
       : '—';
@@ -97,7 +108,7 @@ export function useOrderForm(): { form: OrderFormState; derived: OrderDerived } 
       base *
       copiesFactor *
       qualityFactor *
-      printTypeFactor
+      printTypeFactor,
     );
   });
 
@@ -126,7 +137,7 @@ export function useOrderForm(): { form: OrderFormState; derived: OrderDerived } 
     }
 
     return form.value.postProcessing
-      .map((v) => POST_PROCESSING_LABELS[v] ?? v)
+      .map((value) => POST_PROCESSING_LABELS[value] ?? value)
       .join(', ');
   });
 
@@ -191,13 +202,9 @@ export function useOrderForm(): { form: OrderFormState; derived: OrderDerived } 
   const canSubmit = computed(() => {
     return Boolean(
       form.value.file &&
-      form.value.productName &&
       form.value.copies &&
       form.value.material &&
-      form.value.color &&
-      form.value.name &&
-      form.value.phone &&
-      form.value.email,
+      form.value.color,
     );
   });
 

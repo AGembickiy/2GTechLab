@@ -26,3 +26,11 @@ logs/
 *.suo
 *.sln
 *.swp
+
+# Nuxt build output
+.output/
+.nuxt/
+
+# Local backup files
+*.backup-*
+*.old

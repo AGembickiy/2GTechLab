@@ -39,9 +39,11 @@
 
 <script setup lang="ts">
 import * as THREE from 'three';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import type { ThreeViewerSurfaceClickPayload } from '~/types/three/three-viewer';
+
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { rgb01ForFacePaint } from '~/utils/three/colors';
 import { resolveSelectionModesFromPointer } from '~/utils/three/pointerModes';
 import { resolveRecolorScope } from '~/utils/three/recolorScope';
@@ -81,7 +83,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'update:params', params: { scale: number; rotationX: number; rotationY: number; rotationZ: number }): void;
   (e: 'stats-change', stats: { selectedCount: number; paintedFaces: number; totalFaces: number; undoAvailable: boolean }): void;
-  (e: 'surface-click', payload: { id: string; index: number; type: string } | null): void;
+  (e: 'surface-click', payload: ThreeViewerSurfaceClickPayload): void;
   (e: 'error', message: string): void;
   (e: 'material-select', materialId: number): void;
   (e: 'reset-to-base'): void;

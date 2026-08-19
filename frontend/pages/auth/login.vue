@@ -1,6 +1,6 @@
 <template>
   <section class="mx-auto flex min-h-[60vh] w-full max-w-md items-center justify-center px-4 py-16">
-    <div class="w-full rounded-2xl border border-slate-800 bg-slate-900/70 p-8 shadow-xl">
+    <div class="w-full rounded-2xl border border-slate-800 bg-white/[0.04] p-8 shadow-xl">
       <h1 class="text-center text-2xl font-bold text-slate-100">Вход в аккаунт</h1>
       <p class="mt-2 text-center text-sm text-slate-400">
         Для доступа к админ-панели введите логин и пароль.

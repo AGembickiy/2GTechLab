@@ -1,4 +1,5 @@
 {
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
@@ -13,9 +14,15 @@
     "noEmit": true,
     "isolatedModules": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
-      "~/*": ["./*"]
+      "~/*": [
+        "./*"
+      ]
     }
   },
-  "exclude": ["node_modules", ".output"]
+  "exclude": [
+    "node_modules",
+    ".output"
+  ]
 }

@@ -8,12 +8,10 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-
       <div
         v-if="modelValue"
         class="fixed inset-0 z-50"
       >
-
         <!-- Backdrop -->
         <div
           class="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -25,13 +23,10 @@
         <div
           class="absolute inset-0 flex items-center justify-center p-6"
         >
-
           <div
             class="mx-auto w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl"
           >
-
             <div class="text-center">
-
               <h2 class="text-lg font-bold text-white">
                 Вход в аккаунт
               </h2>
@@ -39,12 +34,10 @@
               <p class="mt-2 text-sm leading-relaxed text-slate-400">
                 Для оформления заказа войдите или создайте аккаунт.
               </p>
-
             </div>
 
 
             <div class="mt-5 space-y-2.5">
-
               <NuxtLink
                 to="/auth/login"
                 class="flex w-full items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
@@ -54,12 +47,11 @@
 
 
               <NuxtLink
-                to="/auth/register"
+                :to="{ path: '/auth/register', query: { redirect: '/order' } }"
                 class="flex w-full items-center justify-center rounded-full border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
               >
                 Регистрация
               </NuxtLink>
-
             </div>
 
 
@@ -70,14 +62,9 @@
             >
               Продолжить без входа
             </button>
-
-
           </div>
-
         </div>
-
       </div>
-
     </Transition>
   </Teleport>
 </template>
@@ -90,16 +77,16 @@ interface Props {
 }
 
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-}>()
+}>();
 
 
 function close() {
-  emit('update:modelValue', false)
+  emit('update:modelValue', false);
 }
 
 
@@ -107,22 +94,22 @@ watch(
   () => props.modelValue,
   (value) => {
 
-    if (typeof document === 'undefined') return
+    if (typeof document === 'undefined') return;
 
     document.body.style.overflow = value
       ? 'hidden'
-      : ''
+      : '';
 
-  }
-)
+  },
+);
 
 
 onUnmounted(() => {
 
   if (typeof document !== 'undefined') {
-    document.body.style.overflow = ''
+    document.body.style.overflow = '';
   }
 
-})
+});
 
 </script>

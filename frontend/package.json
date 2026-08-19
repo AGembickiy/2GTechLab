@@ -30,6 +30,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tailwindcss/vite": "^4.3.2",
     "@types/node": "^25.6.0",
+    "@typescript-eslint/parser": "^8.67.0",
     "@vueuse/nuxt": "^14.2.1",
     "autoprefixer": "^10.4.27",
     "eslint": "^10.6.0",
@@ -37,6 +38,7 @@
     "postcss": "^8.5.8",
     "tailwindcss": "^4.3.2",
     "vitest": "^3.2.4",
-    "vue-eslint-parser": "^10.4.1"
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "^3.3.10"
   }
 }

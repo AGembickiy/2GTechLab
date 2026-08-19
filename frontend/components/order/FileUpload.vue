@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { converterService } from '~/services/converterService'
+import { converterService } from '~/services/converterService';
 import { useOrderForm } from '~/composables/useOrderForm';
-import type { MaterialPresetDto } from '~/composables/usePrintApi';
+import { type MaterialPresetDto } from '~/composables/usePrintApi';
 import type { ThreeViewerSurfaceClickPayload } from '~/types/three/three-viewer';
 import {
   buildEditedGlbName,
@@ -10,9 +10,9 @@ import {
   is3dLikeExtension,
 } from '~/utils/fileUploadModelRules';
 
-const { createProject } = useUploadModel()
+const { createProject } = useUploadModel();
 
-type MaterialType = 'pla' | 'petg' | 'abs' | '';
+type MaterialType = 'pla' | 'petg' | 'abs' | 'tpu' | '';
 type ColorType = 'white' | 'black' | 'gray' | 'red' | 'blue' | 'green' | 'custom' | '';
 
 type MaterialDto = {
@@ -105,7 +105,7 @@ const apiBase = computed(() => (runtimeConfig.public.apiBase as string).replace(
 
 function logUploadStage(message: string) {
   if (!import.meta.client) return;
-  console.info(message);
+  console.error(message);
 }
 
 const fallbackPresets: MaterialPresetDto[] = [
@@ -214,7 +214,7 @@ async function onSlotMaterialChange(slotIndex: number) {
   if (!nextColors.length) {
     slot.color = '';
   } else if (!slot.color || !nextColors.includes(slot.color as Exclude<ColorType, ''>)) {
-    slot.color = nextColors[0];
+    slot.color = nextColors[0] ?? '';
   }
   await nextTick();
   threeViewerRef.value?.recolorSlot(slotIndex);
@@ -293,8 +293,27 @@ watch(
   () => [form.amsSlots?.[0]?.material, form.amsSlots?.[0]?.color],
   ([material, color]) => {
     if (!material || !color) return;
-    if (form.material !== material) form.material = material;
-    if (form.color !== color) form.color = color;
+
+    if (
+      material === 'pla' ||
+      material === 'petg' ||
+      material === 'abs' ||
+      material === 'tpu'
+    ) {
+      form.material = material;
+    }
+
+    if (
+      color === 'white' ||
+      color === 'black' ||
+      color === 'gray' ||
+      color === 'red' ||
+      color === 'blue' ||
+      color === 'green' ||
+      color === 'custom'
+    ) {
+      form.color = color;
+    }
   },
   { immediate: true },
 );
@@ -304,6 +323,7 @@ watch(
   (list) => {
     if (!list.length || !form.amsSlots?.length) return;
     const slot0 = form.amsSlots[0];
+    if (!slot0) return;
     if (!slot0.material) slot0.material = 'pla';
     if (!slot0.color) {
       const colors = colorsForType(slot0.material);
@@ -575,13 +595,44 @@ async function handleSelectedFile(file: File | null) {
   }
 }
 
+function openPreview() {
+  if (!modelValue.value) {
+    return;
+  }
+
+  errorMessage.value = null;
+
+  if (!previewUrl.value) {
+    previewUrl.value = URL.createObjectURL(modelValue.value);
+  }
+
+  if (getExtension(modelValue.value.name) === 'glb') {
+    previewKind.value = 'glb';
+    previewModelFormat.value = 'glb';
+  }
+
+  isPreviewOpen.value = true;
+
+  if (previewKind.value === 'glb') {
+    nextTick(() => {
+      threeViewerRef.value?.refreshVertexColorsFromSlots?.();
+    });
+  }
+}
+
+defineExpose({
+  openPreview,
+});
+
 </script>
 
 <template>
   <div class="rounded-2xl border border-white/10 bg-white/[0.025] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl">
     <div class="flex items-start justify-between gap-4">
       <div>
-        <div class="text-sm font-semibold">Файл модели</div>
+        <div class="text-sm font-semibold">
+          Файл модели
+        </div>
         <div class="mt-1 text-xs text-slate-400">
           3MF, OBJ, FBX, STL, DAE, GLTF, BLEND, SKP, IGES, STEP, VRML и др. • до 100 МБ
         </div>
@@ -611,7 +662,12 @@ async function handleSelectedFile(file: File | null) {
         >
           <span class="text-lg leading-none">×</span>
         </button>
-        <input ref="fileInput" type="file" class="absolute inset-0 z-0 opacity-0" @change="onChange" />
+        <input
+          ref="fileInput"
+          type="file"
+          class="absolute inset-0 z-0 opacity-0"
+          @change="onChange"
+        >
       </label>
     </div>
   </div>
@@ -627,29 +683,40 @@ async function handleSelectedFile(file: File | null) {
         <!-- Заголовок: фиксированная высота -->
         <div class="flex shrink-0 items-start justify-between gap-4 mb-4">
           <div>
-            <div class="text-sm font-semibold">Предпросмотр</div>
+            <div class="text-sm font-semibold">
+              Предпросмотр
+            </div>
             <div class="mt-1 text-xs text-slate-400">
               {{ modelValue?.name ?? originalFile?.name ?? '' }}
             </div>
           </div>
-          <AppButton color="gray" variant="ghost" size="sm" @click="isPreviewOpen = false">Закрыть</AppButton>
+          <AppButton
+            color="gray"
+            variant="secondary"
+            size="sm"
+            @click="isPreviewOpen = false"
+          >
+            Закрыть
+          </AppButton>
         </div>
 
         <!-- Ошибка: если есть -->
-        <div v-if="errorMessage" class="mb-4 shrink-0 rounded-xl border border-rose-500/30 bg-rose-950/20 p-3 text-xs text-rose-200">
+        <div
+          v-if="errorMessage"
+          class="mb-4 shrink-0 rounded-xl border border-rose-500/30 bg-rose-950/20 p-3 text-xs text-rose-200"
+        >
           {{ errorMessage }}
         </div>
 
         <!-- Основная рабочая область: занимает всё оставшееся место -->
         <div class="flex flex-1 min-h-0 flex-col lg:flex-row gap-4 overflow-hidden">
-          
           <template v-if="previewKind === 'image' && previewUrl">
             <div class="flex-1 flex items-center justify-center bg-slate-900/50 rounded-xl overflow-hidden">
               <img
                 :src="previewUrl"
                 alt="preview"
                 class="max-h-full max-w-full object-contain"
-              />
+              >
             </div>
           </template>
 
@@ -677,12 +744,16 @@ async function handleSelectedFile(file: File | null) {
             <!-- Правая часть: Инструменты (Фиксированная ширина, независимый скролл) -->
             <div class="lg:w-[400px] w-full shrink-0 flex flex-col gap-4 min-h-0 overflow-hidden">
               <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-4">
-                <div class="text-sm font-semibold">Инструменты</div>
+                <div class="text-sm font-semibold">
+                  Инструменты
+                </div>
 
                 <!-- Секция AMS слотов -->
                 <div class="rounded-2xl bg-white/[0.025] p-4">
                   <div class="flex items-center justify-between gap-2 mb-3">
-                    <div class="text-xs font-semibold text-slate-200">AMS слоты</div>
+                    <div class="text-xs font-semibold text-slate-200">
+                      AMS слоты
+                    </div>
                     <div class="flex items-center gap-2">
                       <button
                         type="button"
@@ -711,7 +782,9 @@ async function handleSelectedFile(file: File | null) {
                       :class="idx === activeSlotIndex ? 'border border-indigo-400/50 bg-indigo-500/10' : 'bg-white/[0.025]'"
                     >
                       <div class="flex items-center justify-between gap-2">
-                        <div class="text-[11px] font-semibold text-slate-200">Слот {{ idx + 1 }}</div>
+                        <div class="text-[11px] font-semibold text-slate-200">
+                          Слот {{ idx + 1 }}
+                        </div>
                         <button
                           type="button"
                           class="rounded-md border border-slate-700/70 bg-slate-950/20 px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-slate-950/30"
@@ -722,15 +795,26 @@ async function handleSelectedFile(file: File | null) {
                       </div>
 
                       <div class="mt-2">
-                        <div class="text-[11px] text-slate-400">Материал</div>
+                        <div class="text-[11px] text-slate-400">
+                          Материал
+                        </div>
                         <div class="relative mt-1">
                           <select
                             v-model="slot.material"
                             class="w-full appearance-none rounded-lg border border-slate-700/70 bg-slate-900/70 px-2 py-1.5 pr-8 text-xs text-slate-100 shadow-inner outline-none transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-400/20"
                             @change="onSlotMaterialChange(idx)"
                           >
-                            <option disabled value="">Выберите</option>
-                            <option v-for="t in slotMaterials" :key="t" :value="t">
+                            <option
+                              disabled
+                              value=""
+                            >
+                              Выберите
+                            </option>
+                            <option
+                              v-for="t in slotMaterials"
+                              :key="t"
+                              :value="t"
+                            >
                               {{ materialLabel(t) }}
                             </option>
                           </select>
@@ -739,7 +823,9 @@ async function handleSelectedFile(file: File | null) {
                       </div>
 
                       <div class="mt-2">
-                        <div class="text-[11px] text-slate-400">Цвета материала</div>
+                        <div class="text-[11px] text-slate-400">
+                          Цвета материала
+                        </div>
                         <div class="mt-1 flex flex-wrap gap-2">
                           <button
                             v-for="c in colorsForType(slot.material)"
@@ -763,32 +849,26 @@ async function handleSelectedFile(file: File | null) {
                 <div class="mb-2 text-[10px] leading-tight text-slate-400">
                   Клик: полигон • повторный клик по выделенному — снять • Shift+клик: мультивыбор • Ctrl/Cmd: поверхность
                 </div>
-                <div class="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    :disabled="!isStlEdited || isSavingEditedStl"
-                    class="w-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
-                    @click="saveEditedStlAndUseInOrder"
-                  >
-                    {{ isSavingEditedStl ? 'Сохранение...' : 'Использовать изменённый GLB' }}
-                  </button>
-                  <a
-                    :href="previewUrl"
-                    :download="modelValue?.name || 'model.glb'"
-                    class="w-full text-center rounded-full bg-slate-800/60 py-2 text-xs font-semibold text-slate-100 hover:bg-slate-800"
-                  >
-                    Скачать GLB
-                  </a>
-                </div>
+                <button
+                  type="button"
+                  :disabled="isSavingEditedStl || !modelValue"
+                  class="w-full rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 py-2 text-xs font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
+                  @click="form.step = 2"
+                >
+                  {{ isSavingEditedStl ? 'Сохранение...' : 'Далее' }}
+                </button>
               </div>
             </div>
           </template>
 
-            <div v-else class="flex-1 flex items-center justify-center rounded-xl border border-slate-800/70 bg-slate-950/40 p-4 text-xs text-slate-300">
-              Для этого типа файла предпросмотр пока недоступен.
-            </div>
+          <div
+            v-else
+            class="flex-1 flex items-center justify-center rounded-xl border border-slate-800/70 bg-slate-950/40 p-4 text-xs text-slate-300"
+          >
+            Для этого типа файла предпросмотр пока недоступен.
           </div>
         </div>
-      </AppModal>
-    </ClientOnly>
-  </template>
+      </div>
+    </AppModal>
+  </ClientOnly>
+</template>

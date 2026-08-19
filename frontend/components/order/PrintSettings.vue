@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue';
 
 interface OrderFormModel {
-  prototypeType: 'standard' | 'strong' | 'solid'
   copies: number
   postProcessing: Array<'sanding' | 'priming' | 'painting'>
   comment: string
@@ -10,41 +9,32 @@ interface OrderFormModel {
 
 const modelValue = defineModel<OrderFormModel>({
   required: true,
-})
+});
 
-const prototypeStrength = ref(5)
+const prototypeStrength = ref(5);
 
 watch(prototypeStrength, (value) => {
   const normalized = Math.min(
     100,
     Math.max(5, Math.round(value / 5) * 5),
-  )
+  );
 
   if (normalized !== value) {
-    prototypeStrength.value = normalized
-    return
+    prototypeStrength.value = normalized;
   }
-
-  if (normalized < 35) {
-    modelValue.value.prototypeType = 'standard'
-  } else if (normalized < 70) {
-    modelValue.value.prototypeType = 'strong'
-  } else {
-    modelValue.value.prototypeType = 'solid'
-  }
-})
+});
 
 const prototypeLabel = computed(() => {
   if (prototypeStrength.value < 34) {
-    return 'Стандартный прототип'
+    return 'Стандартный прототип';
   }
 
   if (prototypeStrength.value < 67) {
-    return 'Прочный прототип'
+    return 'Прочный прототип';
   }
 
-  return 'Монолитный прототип'
-})
+  return 'Монолитный прототип';
+});
 
 const postProcessingOptions = [
   {
@@ -59,7 +49,7 @@ const postProcessingOptions = [
     value: 'painting',
     label: 'Покраска',
   },
-] as const
+] as const;
 </script>
 
 <template>
@@ -109,7 +99,7 @@ const postProcessingOptions = [
             max="100"
             step="5"
             class="prototype-range w-full cursor-pointer"
-          />
+          >
 
           <div class="mt-3 flex items-center justify-between gap-3">
             <span class="text-[11px] text-slate-500">
@@ -141,7 +131,7 @@ const postProcessingOptions = [
             type="number"
             min="1"
             class="w-full rounded-xl bg-white/[0.025] px-4 py-3 text-sm font-semibold text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-indigo-500/40 focus:ring-2 focus:ring-indigo-500/20"
-          />
+          >
 
           <p class="mt-2 text-[11px] leading-relaxed text-slate-500">
             Укажите необходимое количество экземпляров.
@@ -172,7 +162,7 @@ const postProcessingOptions = [
               type="checkbox"
               :value="option.value"
               class="h-4 w-4 shrink-0 cursor-pointer rounded border-white/10 bg-black/30 text-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
+            >
 
             <span class="leading-relaxed">
               {{ option.label }}
