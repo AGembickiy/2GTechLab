@@ -11,11 +11,11 @@ export class AuthService {
     return useAuthStore()
   }
 
-  async login(username: string, password: string): Promise<any> {
+  async login(phone: string, password: string): Promise<any> {
     const response = await this.api(`${this.baseUrl}/login/`, {
       method: 'POST',
       body: {
-        username,
+        username: phone,
         password,
       },
     })

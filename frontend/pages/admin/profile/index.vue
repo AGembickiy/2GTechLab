@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: 'client',
+  layout: 'admin',
   middleware: 'auth-check',
 });
 </script>

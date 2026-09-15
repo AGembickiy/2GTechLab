@@ -620,8 +620,20 @@ function openPreview() {
   }
 }
 
+async function selectFile(file: File) {
+  if (fileInput.value) {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.value.files = dataTransfer.files;
+  }
+
+  logUploadStage(`Выбран файл из каталога: ${file.name}`);
+  await handleSelectedFile(file);
+}
+
 defineExpose({
   openPreview,
+  selectFile,
 });
 
 </script>

@@ -1,7 +1,11 @@
-import { nextTick, ref } from 'vue';
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue';
 import FileUpload from './FileUpload.vue';
 import PrintSettings from './PrintSettings.vue';
+
+const props = defineProps<{
+  modelUrl?: string;
+}>();
 
 const { form } = useOrderForm();
 const fileUploadRef = ref<InstanceType<typeof FileUpload> | null>(null);
@@ -13,6 +17,41 @@ function goToSettings() {
 
   form.step = 2;
 }
+
+async function loadCatalogModel(url: string) {
+  if (!url || form.file) {
+    return;
+  }
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Не удалось загрузить модель: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const fileName = url.split('/').pop() || 'model.glb';
+  const file = new File([blob], fileName, {
+    type: blob.type || 'model/gltf-binary',
+  });
+
+  await nextTick();
+  await fileUploadRef.value?.selectFile(file);
+}
+
+watch(
+  () => props.modelUrl,
+  (url) => {
+    if (!url) {
+      return;
+    }
+
+    void loadCatalogModel(url).catch((error: unknown) => {
+      console.error('Ошибка загрузки модели из каталога:', error);
+    });
+  },
+  { immediate: true },
+);
 
 function goToFile() {
   form.step = 1;

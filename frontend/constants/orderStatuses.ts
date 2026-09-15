@@ -8,7 +8,7 @@ export const ORDER_STATUSES = {
   READY_FOR_PICKUP: 'ready',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
-} as const
+} as const;
 
 export const ORDER_STATUS_NAMES = {
   draft: 'Черновик',
@@ -17,7 +17,7 @@ export const ORDER_STATUS_NAMES = {
   ready: 'Готов к выдаче',
   completed: 'Завершен',
   cancelled: 'Отменен',
-} as const
+} as const;
 
 export const ORDER_STATUS_COLORS = {
   draft: 'text-slate-400',
@@ -26,6 +26,11 @@ export const ORDER_STATUS_COLORS = {
   ready: 'text-emerald-500',
   completed: 'text-green-500',
   cancelled: 'text-rose-500',
-} as const
+} as const;
 
-export type OrderStatus = typeof ORDER_STATUSES[keyof typeof ORDER_STATUSES]
+export type OrderStatus = typeof ORDER_STATUSES[keyof typeof ORDER_STATUSES];
+
+/**
+ * Alias для компонентов, использующих старое имя.
+ */
+export const ORDER_STATUS_LABELS = ORDER_STATUS_NAMES;

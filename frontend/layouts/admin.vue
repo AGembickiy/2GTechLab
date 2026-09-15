@@ -1,28 +1,27 @@
 <template>
   <div
-    class="min-h-screen bg-gradient-to-br from-graphite via-black to-titanium text-white"
+    class="flex min-h-screen flex-col bg-gradient-to-br from-graphite via-black to-titanium text-white"
   >
-    <div class="flex min-h-screen">
+    <header
+      class="shrink-0 border-b border-white/10 bg-black/30 px-6 py-5 backdrop-blur-md lg:px-8"
+    >
+      <h1 class="text-2xl font-bold tracking-tight text-white">
+        {{ pageTitle }}
+      </h1>
+
+      <p
+        v-if="pageSubtitle"
+        class="mt-1 text-sm text-slate-400"
+      >
+        {{ pageSubtitle }}
+      </p>
+    </header>
+
+    <div class="flex min-h-0 flex-1">
       <aside
         class="flex w-64 shrink-0 flex-col border-r border-white/10 bg-black/40 backdrop-blur-md"
       >
-        <div class="border-b border-white/10 p-5">
-          <NuxtLink
-            to="/admin"
-            class="block rounded-2xl px-3 py-2 transition-colors hover:bg-white/5"
-          >
-            <div
-              class="text-sm font-extrabold tracking-[0.18em] text-white transition-colors hover:text-indigo-400"
-            >
-              АДМИН-ПАНЕЛЬ
-            </div>
-            <div class="mt-1 text-xs font-medium text-slate-500">
-              TechLab
-            </div>
-          </NuxtLink>
-        </div>
-
-        <nav class="flex flex-1 flex-col gap-2 px-3 py-5">
+        <nav class="flex flex-col gap-2 px-3 py-5">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
@@ -34,7 +33,7 @@
                 : 'text-slate-300 hover:bg-white/5 hover:text-white'
             "
           >
-            <UIcon
+            <Icon
               :name="item.icon"
               class="h-5 w-5 shrink-0"
               :class="
@@ -66,34 +65,17 @@
         </div>
       </aside>
 
-      <div class="flex min-w-0 flex-1 flex-col">
-        <header
-          class="border-b border-white/10 bg-black/30 px-6 py-5 backdrop-blur-md"
-        >
-          <h1 class="text-2xl font-bold tracking-tight text-white">
-            {{ pageTitle }}
-          </h1>
-
-          <p
-            v-if="pageSubtitle"
-            class="mt-1 text-sm text-slate-400"
-          >
-            {{ pageSubtitle }}
-          </p>
-        </header>
-
-        <main class="flex-1 overflow-auto p-6 lg:p-8">
-          <slot />
-        </main>
-      </div>
+      <main class="min-w-0 flex-1 overflow-auto p-6 lg:p-8">
+        <slot />
+      </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const route = useRoute()
-const router = useRouter()
-const { logout } = useAdminAuth()
+const route = useRoute();
+const router = useRouter();
+const { logout } = useAdminAuth();
 
 const navItems = [
   {
@@ -126,7 +108,22 @@ const navItems = [
     to: '/admin/users',
     icon: 'i-heroicons-users',
   },
-] as const
+  {
+    label: 'Сообщения',
+    to: '/admin/messages',
+    icon: 'i-heroicons-chat-bubble-left-right',
+  },
+  {
+    label: 'Профиль',
+    to: '/admin/profile',
+    icon: 'i-heroicons-user-circle',
+  },
+  {
+    label: 'Настройки сайта',
+    to: '/admin/settings',
+    icon: 'i-heroicons-cog-6-tooth',
+  },
+] as const;
 
 const titles: Record<string, { title: string; subtitle?: string }> = {
   '/admin': {
@@ -157,18 +154,30 @@ const titles: Record<string, { title: string; subtitle?: string }> = {
     title: 'Пользователи',
     subtitle: 'Учётные записи',
   },
-}
+  '/admin/messages': {
+    title: 'Сообщения',
+    subtitle: 'Обращения пользователей',
+  },
+  '/admin/profile': {
+    title: 'Профиль',
+    subtitle: 'Личные данные администратора',
+  },
+  '/admin/settings': {
+    title: 'Настройки сайта',
+    subtitle: 'Управление настройками frontend',
+  },
+};
 
 const pageTitle = computed(
   () => titles[route.path]?.title ?? 'Админ-панель',
-)
+);
 
 const pageSubtitle = computed(
   () => titles[route.path]?.subtitle,
-)
+);
 
 function onLogout() {
-  logout()
-  router.push('/auth/login')
+  logout();
+  router.push('/auth/login');
 }
 </script>

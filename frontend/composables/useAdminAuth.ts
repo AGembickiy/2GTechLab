@@ -1,19 +1,20 @@
 /**
  * Auth composables для админа
  */
+import { authService } from '@/services/authService'
 import { useAuthStore } from '@/stores/auth'
 import { computed } from 'vue'
 
 export function useAdminAuth() {
   const authStore = useAuthStore()
 
-  async function login(username: string, password: string): Promise<any> {
-    return await authStore.login(username, password)
+  async function login(phone: string, password: string): Promise<any> {
+    return await authService.login(phone, password)
   }
 
   async function logout() {
-    authStore.logout()
-    navigateTo('/auth/login')
+    await authService.logout()
+    await navigateTo('/auth/login')
   }
 
   return {

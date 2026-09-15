@@ -13,7 +13,7 @@ export default defineNuxtRouteMiddleware((to) => {
 
   // Redirect to dashboard based on role
   if (to.path === '/dashboard') {
-    switch (authStore.userRole) {
+    switch (authStore.getUserRole) {
       case ROLES.ADMIN:
         return navigateTo('/admin')
       case ROLES.MANAGER:
@@ -42,16 +42,16 @@ export default defineNuxtRouteMiddleware((to) => {
   for (const [route, roles] of Object.entries(allowedRoutes)) {
     if (route.endsWith('/*')) {
       const baseRoute = route.slice(0, -2)
-      if (to.path.startsWith(baseRoute) && roles.includes(authStore.userRole)) {
+      if (to.path.startsWith(baseRoute) && roles.includes(authStore.getUserRole)) {
         return
       }
-    } else if (to.path === route && roles.includes(authStore.userRole)) {
+    } else if (to.path === route && roles.includes(authStore.getUserRole)) {
       return
     }
   }
 
   // If no match, redirect to user's default dashboard
-  switch (authStore.userRole) {
+  switch (authStore.getUserRole) {
     case ROLES.ADMIN:
       return navigateTo('/admin')
     case ROLES.MANAGER:

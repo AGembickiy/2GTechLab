@@ -6,6 +6,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const { form, derived } = useOrderForm();
 const authStore = useAuthStore();
+const route = useRoute();
 
 const materialUsageText = computed(
   () => `${derived.materialUsageGrams.value} г`,
@@ -25,9 +26,13 @@ async function submitOrder() {
   }
 
   if (!authStore.isAuthenticated) {
+    const redirectPath = route.path.startsWith('/client/')
+      ? '/client/order'
+      : '/order';
+
     await navigateTo({
       path: '/auth/register',
-      query: { redirect: '/order' },
+      query: { redirect: redirectPath },
     });
     return;
   }

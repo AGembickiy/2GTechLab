@@ -17,6 +17,7 @@ interface ModelCard {
   meta: string;
   price: string;
   image: string;
+  file?: string;
 }
 
 const categories: ModelCategory[] = [
@@ -40,6 +41,7 @@ const models: ModelCard[] = [
     price: 'от 490 ₽',
     image:
       'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=900&q=80',
+    file: '/models/test-model.glb',
   },
   {
     id: 2,
@@ -219,7 +221,10 @@ const filteredModels = computed(() => {
               </div>
 
               <NuxtLink
-                to="/order"
+                :to="{
+                  path: '/order',
+                  query: model.file ? { model: model.file } : undefined,
+                }"
                 class="inline-flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-400 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-950/30 transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-xl hover:shadow-indigo-900/30"
               >
                 Заказать

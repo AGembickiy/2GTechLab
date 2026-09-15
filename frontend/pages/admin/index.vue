@@ -1,254 +1,328 @@
-<template>
-  <div class="space-y-6">
-    <!-- Уведомления -->
-    <div v-if="notification.message" class="fixed right-6 top-6 z-50 max-w-sm">
-      <AppAlert
-        :variant="notification.variant"
-        :title="notification.title"
-        :message="notification.message"
-        :closable="true"
-        @close="clearNotification"
-      />
-    </div>
-    <!-- Статус аутентификации -->
-    <div class="rounded-xl border border-slate-800/60 bg-slate-900/40 p-6">
-      <h2 class="text-lg font-semibold text-slate-100">Проверка доступа</h2>
-      <div class="mt-4 space-y-2 text-sm text-slate-300">
-        <div class="flex items-center justify-between">
-          <span>Статус:</span>
-          <span class="font-medium text-emerald-400">
-            {{ authStore.isAuthenticated ? '✓ Авторизован' : '✗ Не авторизован' }}
-          </span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span>Логин:</span>
-          <span class="font-medium text-slate-100">{{ authStore.user?.username || '—' }}</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span>Email:</span>
-          <span class="font-medium text-slate-100">{{ authStore.user?.email || '—' }}</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span>Роль:</span>
-          <span class="font-medium text-amber-400">{{ authStore.userRole || '—' }}</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span>Токен доступа:</span>
-          <span class="font-mono text-xs text-slate-400">
-            {{ authStore.accessToken ? 'Есть (скрыт)' : 'Нет' }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Данные для проверки -->
-    <div class="rounded-xl border border-slate-800/60 bg-slate-900/40 p-6">
-      <h2 class="text-lg font-semibold text-slate-100">Данные для входа</h2>
-      <div class="mt-4 space-y-3">
-        <div class="rounded-lg border border-slate-800 bg-slate-950 p-3">
-          <div class="text-xs text-slate-500">Логин</div>
-          <div class="font-mono text-sm font-medium text-emerald-400">admin</div>
-        </div>
-        <div class="rounded-lg border border-slate-800 bg-slate-950 p-3">
-          <div class="text-xs text-slate-500">Пароль</div>
-          <div class="font-mono text-sm font-medium text-emerald-400">admin</div>
-        </div>
-        <div class="rounded-lg border border-slate-800 bg-slate-950 p-3">
-          <div class="text-xs text-slate-500">Роль</div>
-          <div class="font-mono text-sm font-medium text-amber-400">admin</div>
-        </div>
-      </div>
-
-      <button
-        @click="showLoginModal = true"
-        class="mt-4 w-full rounded-lg bg-amber-500 py-2 px-4 font-medium text-slate-900 hover:bg-amber-400"
-      >
-        Показать форму входа
-      </button>
-    </div>
-
-    <!-- Быстрый переход -->
-    <div class="grid gap-4 sm:grid-cols-2">
-      <NuxtLink
-        to="/admin/users"
-        class="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition-colors hover:border-amber-500/50"
-      >
-        <div class="flex items-center gap-3">
-          <div class="rounded-lg bg-amber-500/20 p-2">
-            <svg class="h-6 w-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-semibold text-slate-100">Пользователи</h3>
-            <p class="text-sm text-slate-400">Управление пользователями</p>
-          </div>
-        </div>
-      </NuxtLink>
-
-      <NuxtLink
-        to="/admin/orders"
-        class="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition-colors hover:border-amber-500/50"
-      >
-        <div class="flex items-center gap-3">
-          <div class="rounded-lg bg-emerald-500/20 p-2">
-            <svg class="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-semibold text-slate-100">Заказы</h3>
-            <p class="text-sm text-slate-400">Список всех заказов</p>
-          </div>
-        </div>
-      </NuxtLink>
-
-      <NuxtLink
-        to="/admin/warehouse"
-        class="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition-colors hover:border-amber-500/50"
-      >
-        <div class="flex items-center gap-3">
-          <div class="rounded-lg bg-blue-500/20 p-2">
-            <svg class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-semibold text-slate-100">Склад</h3>
-            <p class="text-sm text-slate-400">Управление товарами</p>
-          </div>
-        </div>
-      </NuxtLink>
-
-      <NuxtLink
-        to="/admin/finance"
-        class="rounded-xl border border-slate-800/60 bg-slate-900/40 p-4 transition-colors hover:border-amber-500/50"
-      >
-        <div class="flex items-center gap-3">
-          <div class="rounded-lg bg-purple-500/20 p-2">
-            <svg class="h-6 w-6 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-semibold text-slate-100">Финансы</h3>
-            <p class="text-sm text-slate-400">Финансовая отчетность</p>
-          </div>
-        </div>
-      </NuxtLink>
-    </div>
-
-    <!-- Модальное окно входа -->
-    <div
-      v-if="showLoginModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
-    >
-      <div class="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-        <div class="mb-4 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-slate-100">Вход в систему</h3>
-          <button
-            @click="showLoginModal = false"
-            class="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-          >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form @submit.prevent="handleLogin" class="space-y-4">
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300">Логин</label>
-            <input
-              v-model="loginForm.username"
-              type="text"
-              required
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-              placeholder="admin"
-            />
-          </div>
-
-          <div>
-            <label class="mb-1 block text-sm font-medium text-slate-300">Пароль</label>
-            <input
-              v-model="loginForm.password"
-              type="password"
-              required
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-              placeholder="••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            :disabled="loading"
-            class="w-full rounded-lg bg-amber-500 py-2 font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-50"
-          >
-            {{ loading ? 'Вход...' : 'Войти' }}
-          </button>
-
-          <div class="text-xs text-slate-500">
-            <p>Для входа используйте:</p>
-            <p>Логин: <span class="font-mono text-emerald-400">admin</span></p>
-            <p>Пароль: <span class="font-mono text-emerald-400">admin</span></p>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 definePageMeta({
   layout: 'admin',
   middleware: 'auth-check',
-})
+});
 
-const authStore = useAuthStore()
-const showLoginModal = ref(false)
-const loading = ref(false)
-const loginError = ref('')
+const authStore = useAuthStore();
 
-const loginForm = reactive({
-  username: 'admin',
-  password: 'admin',
-})
+const stats = [
+  {
+    title: 'Заказы сегодня',
+    value: '24',
+    change: '+12%',
+  },
+  {
+    title: 'Выручка',
+    value: '184 500 ₽',
+    change: '+8.4%',
+  },
+  {
+    title: 'Активные пользователи',
+    value: '1 284',
+    change: '+5.2%',
+  },
+  {
+    title: 'Оборудование',
+    value: '7 / 9',
+    change: 'загружено',
+  },
+];
 
-const notification = ref({
-  variant: 'info' as const,
-  title: '',
-  message: '',
-})
+const sections = [
+  {
+    title: 'Финансы',
+    description: 'Выручка, расходы, платежи и финансовые показатели.',
+    to: '/admin/finance',
+  },
+  {
+    title: 'Склад',
+    description: 'Материалы, остатки, расходники и поставки.',
+    to: '/admin/warehouse',
+  },
+  {
+    title: 'Пользователи',
+    description: 'Клиенты, менеджеры, партнёры и администраторы.',
+    to: '/admin/users',
+  },
+  {
+    title: 'Оборудование',
+    description: 'Принтеры, состояние, загрузка и обслуживание.',
+    to: '/admin/equipment',
+  },
+  {
+    title: 'Заказы',
+    description: 'Все заказы студии и управление их состояниями.',
+    to: '/admin/orders',
+  },
+  {
+    title: 'Модели',
+    description: 'Каталог моделей, файлы и управление библиотекой.',
+    to: '/admin/models',
+  },
+];
 
-function showNotification(variant: 'success' | 'error', title: string, message: string) {
-  notification.value = {
-    variant,
-    title,
-    message,
-  }
-}
-
-function clearNotification() {
-  notification.value = {
-    variant: 'info' as const,
-    title: '',
-    message: '',
-  }
-}
-
-async function handleLogin() {
-  loading.value = true
-  loginError.value = ''
-
-  try {
-    await authStore.login(loginForm.username, loginForm.password)
-    showNotification('success', 'Успех', 'Вы успешно вошли в систему')
-    showLoginModal.value = false
-  } catch (error: any) {
-    loginError.value = error?.message || 'Не удалось войти в систему'
-    showNotification('error', 'Ошибка', loginError.value)
-  } finally {
-    loading.value = false
-  }
-}
+const recentOrders = [
+  {
+    id: '#1048',
+    client: 'ООО ПромТех',
+    status: 'В печати',
+    amount: '18 400 ₽',
+  },
+  {
+    id: '#1047',
+    client: 'Алексей К.',
+    status: 'Ожидает оплаты',
+    amount: '6 900 ₽',
+  },
+  {
+    id: '#1046',
+    client: 'Инженерная группа',
+    status: 'Готов',
+    amount: '31 200 ₽',
+  },
+  {
+    id: '#1045',
+    client: 'Мария С.',
+    status: 'Новый',
+    amount: '3 450 ₽',
+  },
+];
 </script>
+
+<template>
+  <div class="space-y-6">
+    <section
+      class="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl"
+    >
+      <div
+        class="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"
+      />
+
+      <div
+        class="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
+      >
+        <div>
+          <p
+            class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400"
+          >
+            TechLab Control Center
+          </p>
+
+          <h1 class="mt-2 text-3xl font-black tracking-tight text-white">
+            Дашборд
+          </h1>
+
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+            Управление студией, производством, финансами, заказами и
+            пользователями в одном рабочем пространстве.
+          </p>
+        </div>
+
+        <div
+          class="rounded-xl border border-emerald-400/15 bg-emerald-400/[0.06] px-4 py-3"
+        >
+          <div class="text-xs text-slate-500">
+            Администратор
+          </div>
+
+          <div class="mt-1 text-sm font-bold text-emerald-300">
+            {{ authStore.user?.username || 'Администратор' }}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <article
+        v-for="stat in stats"
+        :key="stat.title"
+        class="rounded-2xl border border-white/10 bg-white/[0.025] p-5"
+      >
+        <div class="text-xs font-medium text-slate-500">
+          {{ stat.title }}
+        </div>
+
+        <div class="mt-3 flex items-end justify-between gap-3">
+          <div class="text-2xl font-black text-white">
+            {{ stat.value }}
+          </div>
+
+          <div class="text-xs font-bold text-emerald-300">
+            {{ stat.change }}
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section>
+      <div class="mb-4">
+        <h2 class="text-xl font-bold text-white">
+          Управление студией
+        </h2>
+
+        <p class="mt-1 text-sm text-slate-500">
+          Доступ ко всем основным рабочим разделам администратора.
+        </p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <NuxtLink
+          v-for="section in sections"
+          :key="section.to"
+          :to="section.to"
+          class="group rounded-2xl border border-white/10 bg-white/[0.025] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-400/25 hover:bg-white/[0.04]"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-bold text-white">
+                {{ section.title }}
+              </h3>
+
+              <p class="mt-2 text-sm leading-6 text-slate-400">
+                {{ section.description }}
+              </p>
+            </div>
+
+            <span
+              class="text-slate-500 transition group-hover:translate-x-1 group-hover:text-cyan-300"
+            >
+              →
+            </span>
+          </div>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.025] p-5"
+      >
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">
+              Последние заказы
+            </h2>
+
+            <p class="mt-1 text-xs text-slate-500">
+              Последняя активность производства
+            </p>
+          </div>
+
+          <NuxtLink
+            to="/admin/orders"
+            class="text-xs font-bold text-cyan-300 hover:text-cyan-200"
+          >
+            Все заказы →
+          </NuxtLink>
+        </div>
+
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full min-w-[620px] text-left text-sm">
+            <thead class="border-b border-white/10 text-xs text-slate-500">
+              <tr>
+                <th class="px-3 py-3 font-semibold">
+                  Заказ
+                </th>
+
+                <th class="px-3 py-3 font-semibold">
+                  Клиент
+                </th>
+
+                <th class="px-3 py-3 font-semibold">
+                  Статус
+                </th>
+
+                <th class="px-3 py-3 text-right font-semibold">
+                  Сумма
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr
+                v-for="order in recentOrders"
+                :key="order.id"
+                class="border-b border-white/[0.05] last:border-0"
+              >
+                <td class="px-3 py-3 font-semibold text-white">
+                  {{ order.id }}
+                </td>
+
+                <td class="px-3 py-3 text-slate-300">
+                  {{ order.client }}
+                </td>
+
+                <td class="px-3 py-3 text-slate-400">
+                  {{ order.status }}
+                </td>
+
+                <td class="px-3 py-3 text-right font-bold text-slate-200">
+                  {{ order.amount }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.025] p-5"
+      >
+        <h2 class="text-lg font-bold text-white">
+          Состояние студии
+        </h2>
+
+        <div class="mt-5 space-y-4">
+          <div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-400">
+                Принтеры
+              </span>
+
+              <span class="font-bold text-white">
+                7 / 9
+              </span>
+            </div>
+
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div class="h-full w-[78%] rounded-full bg-indigo-500" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <span class="text-slate-400">
+                Склад
+              </span>
+
+              <span class="text-right font-bold text-amber-300">
+                12 позиций требуют внимания
+              </span>
+            </div>
+
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div class="h-full w-[42%] rounded-full bg-amber-400" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-400">
+                Очередь заказов
+              </span>
+
+              <span class="font-bold text-cyan-300">
+                18 активных
+              </span>
+            </div>
+
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div class="h-full w-[64%] rounded-full bg-cyan-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>

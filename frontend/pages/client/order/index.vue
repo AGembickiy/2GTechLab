@@ -32,5 +32,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  layout: 'client',
+  middleware: 'auth-check',
+});
+
 const route = useRoute();
 </script>

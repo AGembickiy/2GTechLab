@@ -1,13 +1,31 @@
 <template>
   <div class="space-y-6">
     <div class="rounded-2xl border border-slate-800/60 bg-slate-900/40 p-6">
-      <h2 class="text-lg font-bold text-slate-100">Мои заказы</h2>
-      <div v-if="pending" class="mt-4 text-sm text-slate-400">Загрузка…</div>
-      <div v-else-if="error" class="mt-4 text-sm text-rose-400">Не удалось загрузить заказы.</div>
-      <div v-else-if="orders.length === 0" class="mt-4 text-sm text-slate-400">
+      <h2 class="text-lg font-bold text-slate-100">
+        Мои заказы
+      </h2>
+      <div
+        v-if="pending"
+        class="mt-4 text-sm text-slate-400"
+      >
+        Загрузка…
+      </div>
+      <div
+        v-else-if="error"
+        class="mt-4 text-sm text-rose-400"
+      >
+        Не удалось загрузить заказы.
+      </div>
+      <div
+        v-else-if="orders.length === 0"
+        class="mt-4 text-sm text-slate-400"
+      >
         У вас пока нет заказов.
       </div>
-      <div v-else class="mt-4 space-y-3">
+      <div
+        v-else
+        class="mt-4 space-y-3"
+      >
         <div
           v-for="order in orders"
           :key="order.id"
@@ -15,7 +33,9 @@
         >
           <div class="flex items-center justify-between">
             <div>
-              <p class="font-semibold text-slate-200">Заказ #{{ order.id }}</p>
+              <p class="font-semibold text-slate-200">
+                Заказ #{{ order.id }}
+              </p>
               <p class="text-sm text-slate-400">
                 Создан: {{ formatDate(order.created_at) }}
               </p>
@@ -45,23 +65,23 @@
 </template>
 
 <script setup lang="ts">
-import { ORDER_STATUS_LABELS, ORDER_STATUSES } from '@/constants/orderStatuses'
-import { OrderService } from '@/services/orderService'
+import { ORDER_STATUS_LABELS, ORDER_STATUSES } from '@/constants/orderStatuses';
+import { OrderService } from '@/services/orderService';
 
 definePageMeta({
   layout: 'client',
   middleware: 'auth-check',
-})
+});
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 
-const orderService = new OrderService()
+const orderService = new OrderService();
 
 const { data: orders, pending, error } = await useAsyncData('user-orders', () =>
   orderService.listOrders({ user: authStore.user?.id }),
-)
+);
 
 const orderStatusColors: Record<string, string> = {
   [ORDER_STATUSES.DRAFT]: 'bg-gray-500/20 text-gray-300',
@@ -70,15 +90,15 @@ const orderStatusColors: Record<string, string> = {
   [ORDER_STATUSES.READY_FOR_PICKUP]: 'bg-green-500/20 text-green-300',
   [ORDER_STATUSES.COMPLETED]: 'bg-green-500/20 text-green-300',
   [ORDER_STATUSES.CANCELLED]: 'bg-red-500/20 text-red-300',
-}
+};
 
 function formatDate(dateString: string) {
-  const date = new Date(dateString)
+  const date = new Date(dateString);
   return date.toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  })
+  });
 }
 
 function formatCurrency(amount: number) {
@@ -86,6 +106,6 @@ function formatCurrency(amount: number) {
     style: 'currency',
     currency: 'RUB',
     minimumFractionDigits: 2,
-  }).format(amount)
+  }).format(amount);
 }
 </script>

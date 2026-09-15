@@ -17,18 +17,12 @@ definePageMeta({
       </p>
 
       <h2 class="mt-2 text-2xl font-black tracking-tight text-white">
-        Аналитика
+        Сообщения
       </h2>
 
       <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-        Раздел «аналитика» находится в разработке.
+        Здесь будут отображаться сообщения от клиентов, менеджеров и партнёров.
       </p>
-
-      <div
-        class="mt-6 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-500"
-      >
-        Здесь будет размещён функционал раздела: SUBАналитика.
-      </div>
     </section>
   </div>
 </template>
